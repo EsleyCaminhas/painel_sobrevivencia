@@ -80,9 +80,24 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
       EC == "X" ~ "X",
       EC == "Y" ~ "Y"
     ),
+    
+    # 1 – VIVO, COM CÂNCER
+    # 2 – VIVO, SOE
+    # 3 – OBITO POR CANCER
+    # 4 – OBITO POR OUTRAS CAUSAS, SOE
+    
+    ULTINFO = case_when(
+      ULTINFO == 1 ~ "VIVO, COM CÂNCER",
+      ULTINFO == 2 ~ "VIVO, SOE",
+      ULTINFO == 3 ~ "OBITO POR CANCER",
+      ULTINFO == 4 ~ "OBITO POR OUTRAS CAUSAS, SOE"
+    ),
+    
     DESFECHO = case_when(
-      ULTINFO %in% c(1,2,4) ~ "0", #censurado
-      ULTINFO == 3 ~ "1"
+      ULTINFO %in% c("VIVO, COM CÂNCER",
+                     "VIVO, SOE",
+                     "OBITO POR OUTRAS CAUSAS, SOE") ~ "0", #censurado
+      ULTINFO == "OBITO POR CANCER" ~ "1"
     )
   )
 
