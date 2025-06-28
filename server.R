@@ -1,20 +1,27 @@
 
 library(shiny)
+library(ggplot2)
+library(data.table)
+
+dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
+                         as.data.table = TRUE)
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
-  
-  output$distPlot <- renderPlot({
-    # generate bins based on input$bins from ui.R
-    x    <- faithful[, 2]
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+  output$grafico_barras <- renderPlot({
     
-    # draw the histogram with the specified number of bins
-    hist(x, breaks = bins, col = 'darkgray', border = 'white',
-         xlab = 'Waiting time to next eruption (in mins)',
-         main = 'Histogram of waiting times')
+    variavel_selecionada <- input$variavel
+    
+    ggplot(dados_cancer, aes(x = .data[[variavel_selecionada]])) +
+      geom_bar(fill = "steelblue", alpha = 0.8) +
+      labs(
+        title = paste("Distribuição de Casos por", variavel_selecionada),
+        x = paste0(variavel_selecionada),
+        y = "Número de Casos"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Melhora legibilidade
   })
 }

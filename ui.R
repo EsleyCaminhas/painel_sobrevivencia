@@ -1,28 +1,31 @@
 
 library(shiny)
+library(shinycssloaders)
 
 ## Aqui fica a parte onde definimos a aparencia do app e onde serão utilizados 
 ## os outputs definidos no server
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
+  titlePanel(""),
   
-  # Application title
-  titlePanel("Old Faithful Geyser Data"),
-  
-  # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
+      selectInput(
+        inputId = "variavel",
+        label = "Selecione a variável para o gráfico:",
+        
+        choices = c("Sexo" = "SEXO",
+                    "Faixa Etária" = "FAIXAETAR"),
+        
+        selected = "SEXO"
+      )
     ),
     
-    # Show a plot of the generated distribution
     mainPanel(
-      plotOutput("distPlot")
+      withSpinner(
+      plotOutput("grafico_barras"),
+      type = 6
+      )
     )
   )
 )
