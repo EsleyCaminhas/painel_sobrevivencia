@@ -1,8 +1,5 @@
 
-library(shiny)
-library(dplyr)
-library(highcharter)
-library(data.table)
+## server.R
 
 dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
                          as.data.table = TRUE) 

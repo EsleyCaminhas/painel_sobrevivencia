@@ -1,5 +1,5 @@
 
-library(shiny)
+## app.R
 
 source("ui.R")
 source("server.R")

@@ -1,9 +1,5 @@
 
-library(shiny)
-library(shinydashboard)
-library(shinycssloaders)
-library(shinyWidgets)
-
+## ui.R
 
 ui <- dashboardPage(
   
