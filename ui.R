@@ -14,7 +14,9 @@ ui <- dashboardPage(
       menuItem("Sobre os dados",
                tabName = "Info"),
       menuItem("Análises Gráficas",
-               tabName = "Graphs")
+               tabName = "Graphs"),
+      menuItem("Curvas de Kaplan-Meier",
+               tabName = "KM")
     )
   ),
   
@@ -60,7 +62,7 @@ ui <- dashboardPage(
                   width = 3,
                   
                   pickerInput(
-                    inputId = "grupo_cid",
+                    inputId = "grupo_cid_1",
                     label = "Topografia (grupo)", 
                     choices = c("C50 Mama" = "C50 Mama",
                                 "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
@@ -85,11 +87,13 @@ ui <- dashboardPage(
                       `actions-box` = TRUE,       
                       `selected-text-format` = "count > 8",
                       `count-selected-text` = "C50-C80",
-                      `none-selected-text` = "Nenhum item selecionado"
+                      `none-selected-text` = "Nenhum item selecionado",
+                      `deselect-all-text` = "Desselecionar todas",
+                      `select-all-text` = "Selecionar todas"
                     )),
                   
                   selectInput(
-                    inputId = "variavel",
+                    inputId = "variavel_1",
                     label = "Selecione a variável para o gráfico:",
                     choices = c("Sexo" = "SEXO",
                                 "Faixa etária" = "FAIXAETAR",
@@ -106,6 +110,61 @@ ui <- dashboardPage(
                   )
                 )
               )
+      ),
+      #Secao com os graficos
+      tabItem(tabName = "KM",
+        sidebarLayout(
+          sidebarPanel(
+            width = 3,
+
+            pickerInput(
+              inputId = "grupo_cid_2",
+              label = "Topografia (grupo)",
+              choices = c("C50 Mama" = "C50 Mama",
+                          "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
+                          "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
+                          "C64-C68 Trato urinário" = "C64-C68 Trato urinário",
+                          "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC",
+                          "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas",
+                          "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas",
+                          "C77 Linfonodos" = "C77 Linfonodos",
+                          "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
+              selected = c("C50 Mama",
+                           "C51-C58 Órgãos genitais femininos",
+                           "C60-C63 Órgãos genitais masculinos",
+                           "C64-C68 Trato urinário",
+                           "C69-C72 Olho, cérebro e outras partes do SNC",
+                           "C73-C75 Tiróide e outras glândulas",
+                           "C76 Out. localizações e localizações mal definidas",
+                           "C77 Linfonodos",
+                           "C80 Localização primária desconhecida"),
+              multiple = TRUE,
+              options = list(
+                `actions-box` = TRUE,
+                `selected-text-format` = "count > 8",
+                `count-selected-text` = "C50-C80",
+                `none-selected-text` = "Nenhum item selecionado",
+                `deselect-all-text` = "Desselecionar todas",
+                `select-all-text` = "Selecionar todas"
+              )),
+
+            selectInput(
+              inputId = "variavel_2",
+              label = "Selecione a variável para o gráfico:",
+              choices = c("Sexo" = "SEXO",
+                          "Faixa etária" = "FAIXAETAR",
+                          "Estádio clínico" = "GRUPO_EC"),
+              selected = "SEXO"
+              )
+            ),
+
+          mainPanel(
+            withSpinner(
+              highchartOutput("vazio"),
+              type = 6
+            )
+          )
+        )
       )
     )
   )
