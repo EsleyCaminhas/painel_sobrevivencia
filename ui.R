@@ -149,7 +149,7 @@ ui <- dashboardPage(
               )),
 
             selectInput(
-              inputId = "variavel_2",
+              inputId = "km_variable",
               label = "Selecione a variável para o gráfico:",
               choices = c("Sexo" = "SEXO",
                           "Faixa etária" = "FAIXAETAR",
@@ -160,7 +160,7 @@ ui <- dashboardPage(
 
           mainPanel(
             withSpinner(
-              highchartOutput("vazio"),
+              plotOutput("km_plot", height = "600px"),
               type = 6
             )
           )

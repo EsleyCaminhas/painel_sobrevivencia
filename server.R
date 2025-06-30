@@ -3,6 +3,8 @@
 
 dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
                          as.data.table = TRUE) 
+dados_cancer$DESFECHO <- as.numeric(dados_cancer$DESFECHO)
+dados_cancer <- dados_cancer[1:1000,]
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
@@ -48,4 +50,65 @@ server <- function(input, output) {
 
   })
   
+  #######################
+  #######################
+  #######################
+  library(survival)
+  library(survminer)
+
+  # Update selectInput choices
+  observe({
+    updateSelectInput(inputId = "km_variable", choices = c("Sexo" = "SEXO"))
+  })
+  dados_filtrados_km <- reactive({
+    dados_cancer |> 
+      filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2)  # Note: grupo_cid_2
+  })
+  # Generate Kaplan-Meier plot
+  output$km_plot <- renderPlot({
+    req(input$km_variable, dados_filtrados_km())
+    df <- dados_filtrados_km()
+    
+    # Handle empty data
+    if(nrow(df) == 0) {
+      return(plot(0, 0, type = "n", main = "Nenhum dado disponível", 
+                  xlab = "", ylab = ""))
+    }
+    
+    # 1. Convert variable to factor for proper grouping
+    df$VAR_KM <- as.factor(df[[input$km_variable]])
+    
+    # 2. Create survival formula
+    #formula <- as.formula(paste("Surv(TEMPO_OBS_DIAG, DESFECHO) ~", 
+    #                            input$km_variable))
+    
+    # 3. Fit survival model
+    fit <- survfit(Surv(TEMPO_OBS_DIAG, DESFECHO) ~VAR_KM, data = df)
+    
+    # 4. Create plot
+    plot_obj <- ggsurvplot(
+      fit,
+      data = df,
+      pval = FALSE,           # Add p-value
+      conf.int = FALSE,
+      risk.table = FALSE,     # Show risk table
+      risk.table.height = 0.25,
+      ggtheme = theme_bw(),
+      palette = "jco",
+      title = paste("Sobrevivência por", 
+                    switch(input$km_variable,
+                           "SEXO" = "Sexo",
+                           "FAIXAETAR" = "Faixa Etária",
+                           "GRUPO_EC" = "Estádio Clínico")),
+      xlab = "Tempo (dias)",
+      ylab = "Probabilidade de Sobrevivência",
+      break.time.by = 365,
+      legend = "right",
+      legend.title = "",
+      legend.labs = levels(df[[input$km_variable]])
+    )
+    
+    # 5. Return the plot
+    print(plot_obj)
+  })
 }
