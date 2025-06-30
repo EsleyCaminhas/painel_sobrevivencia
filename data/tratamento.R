@@ -69,6 +69,7 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
     #Tempo observado
     TEMPO_OBS_DIAG = as.numeric(DTULTINFO - DTDIAG),
     TEMPO_OBS_CONSULT = as.numeric(DTULTINFO - DTCONSULT),
+    TEMPO_OBS_TRAT = as.numeric(DTULTINFO - NAOTRAT),
     
     #Estagio da doenca (precisa fazer um double check nisso aqui)
     GRUPO_EC = case_when(
@@ -98,7 +99,9 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
                      "VIVO, SOE",
                      "OBITO POR OUTRAS CAUSAS, SOE") ~ "0", #censurado
       ULTINFO == "OBITO POR CANCER" ~ "1"
-    )
+    ),
+    NAOTRAT = as.factor(NAOTRAT),
+    DESFECHO = as.numeric(DESFECHO)
   )
 
 ## Salvando como data.table + FST 

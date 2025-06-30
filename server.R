@@ -3,8 +3,6 @@
 
 dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
                          as.data.table = TRUE) 
-dados_cancer$DESFECHO <- as.numeric(dados_cancer$DESFECHO)
-dados_cancer <- dados_cancer[1:1000,]
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
@@ -57,41 +55,39 @@ server <- function(input, output) {
   library(survminer)
 
   # Update selectInput choices
-  observe({
-    updateSelectInput(inputId = "km_variable", choices = c("Sexo" = "SEXO"))
-  })
   dados_filtrados_km <- reactive({
     dados_cancer |> 
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2)  # Note: grupo_cid_2
   })
   # Generate Kaplan-Meier plot
   output$km_plot <- renderPlot({
-    req(input$km_variable, dados_filtrados_km())
+    req(input$km_variable,input$len_tempo,input$Tempo_int, dados_filtrados_km())
     df <- dados_filtrados_km()
+    df$Tempo_int <- (df[[input$Tempo_int]])
+    df <- df %>%
+      mutate(Tempo_int = floor(Tempo_int / as.numeric(input$len_tempo)) + 1)  # Starts at 1
     
-    # Handle empty data
-    if(nrow(df) == 0) {
-      return(plot(0, 0, type = "n", main = "Nenhum dado disponível", 
-                  xlab = "", ylab = ""))
+    df$VAR_KM <- (df[[input$km_variable]])
+
+    if (is.numeric(df$VAR_KM)) {
+            cutpoint <- surv_cutpoint(
+        data = df,
+        time = "Tempo_int",
+        event = "DESFECHO",
+        variables = "VAR_KM"
+      )
+      df$VAR_KM <- surv_categorize(cutpoint)$VAR_KM
     }
     
-    # 1. Convert variable to factor for proper grouping
-    df$VAR_KM <- as.factor(df[[input$km_variable]])
     
-    # 2. Create survival formula
-    #formula <- as.formula(paste("Surv(TEMPO_OBS_DIAG, DESFECHO) ~", 
-    #                            input$km_variable))
-    
-    # 3. Fit survival model
-    fit <- survfit(Surv(TEMPO_OBS_DIAG, DESFECHO) ~VAR_KM, data = df)
-    
-    # 4. Create plot
-    plot_obj <- ggsurvplot(
+    df$VAR_KM <- as.factor(df$VAR_KM)
+    fit <- survfit(Surv(Tempo_int, DESFECHO) ~VAR_KM, data = df)
+    ggsurvplot(
       fit,
       data = df,
       pval = FALSE,           # Add p-value
-      conf.int = FALSE,
-      risk.table = FALSE,     # Show risk table
+      conf.int = input$show_ci,
+      risk.table = TRUE,     # Show risk table
       risk.table.height = 0.25,
       ggtheme = theme_bw(),
       palette = "jco",
@@ -102,13 +98,11 @@ server <- function(input, output) {
                            "GRUPO_EC" = "Estádio Clínico")),
       xlab = "Tempo (dias)",
       ylab = "Probabilidade de Sobrevivência",
-      break.time.by = 365,
+      break.time.by = 4,
       legend = "right",
       legend.title = "",
       legend.labs = levels(df[[input$km_variable]])
-    )
+      )$plot
     
-    # 5. Return the plot
-    print(plot_obj)
   })
 }
