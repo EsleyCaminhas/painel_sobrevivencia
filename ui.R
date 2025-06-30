@@ -149,18 +149,54 @@ ui <- dashboardPage(
               )),
 
             selectInput(
-              inputId = "variavel_2",
+              inputId = "km_variable",
               label = "Selecione a variável para o gráfico:",
-              choices = c("Sexo" = "SEXO",
+              choices = c(
+                          "Sexo" = "SEXO",
+                          "Idade" = "IDADE",
                           "Faixa etária" = "FAIXAETAR",
-                          "Estádio clínico" = "GRUPO_EC"),
+                          "Estágio clínico" = "GRUPO_EC",
+                          "Dias entre consulta e diagnóstico" = "CONSDIAG",
+                          "Dias entre consulta e tratamento" = "TRATCONS",
+                          "Dias entre diagnóstico e tratamento" = "DIAGTRAT",
+                          #"Data da primeira consulta" = "DTCONSULT",
+                          #"Data do diagnóstico" = "DTDIAG",
+                          #"Data de início do tratamento" = "DTTRAT",
+                          #"Data da última informação" = "DTULTINFO",
+                          "Motivo de não tratamento" = "NAOTRAT"),
               selected = "SEXO"
-              )
+              ),
+            selectInput(
+              inputId = "Tempo_int",
+              label = "Selecione o tempo de interesse:",
+              choices = c("TEMPO_OBS_DIAG" = "TEMPO_OBS_DIAG",
+                          "TEMPO_OBS_CONSULT" = "TEMPO_OBS_CONSULT",
+                          "TEMPO_OBS_TRAT" = "TEMPO_OBS_TRAT"),
+              selected = "TEMPO_OBS_DIAG"
+              ),
+          
+            selectInput(
+              inputId = "len_tempo",
+              label = "Selecione o intervalo de tempo:",
+              choices = c("diário" = 1,
+                          "mensal" = 30,
+                          "trimestral" = 90,
+                          "anual" = 365),
+              selected = 365
+              ),
+            shinyWidgets::materialSwitch(
+              inputId = "show_ci",
+              label = "Mostrar intervalo de confiança", 
+              value = FALSE,
+              status = "info"
+            )
             ),
+          
+          
 
           mainPanel(
             withSpinner(
-              highchartOutput("vazio"),
+              plotOutput("km_plot", height = "600px"),
               type = 6
             )
           )
