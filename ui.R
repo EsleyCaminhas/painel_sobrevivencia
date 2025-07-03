@@ -207,7 +207,7 @@ ui <- dashboardPage(
 
           mainPanel(
             withSpinner(
-              plotOutput("km_plot", height = "600px"),
+              plotlyOutput("km_plot", height = "600px"),
               type = 6
             )
           )

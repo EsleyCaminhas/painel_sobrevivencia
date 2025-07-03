@@ -57,7 +57,7 @@ server <- function(input, output) {
   })
   
   # Generate Kaplan-Meier plot
-  output$km_plot <- renderPlot({
+  output$km_plot <- renderPlotly({
     req(input$km_variable,input$len_tempo,input$Tempo_int, dados_filtrados_km())
     df <- dados_filtrados_km()
     df$Tempo_int <- (df[[input$Tempo_int]])
@@ -79,27 +79,39 @@ server <- function(input, output) {
     
     df$VAR_KM <- as.factor(df$VAR_KM)
     fit <- survfit(Surv(Tempo_int, DESFECHO) ~VAR_KM, data = df)
-    ggsurvplot(
-      fit,
-      data = df,
-      pval = FALSE,           # Add p-value
-      conf.int = input$show_ci,
-      risk.table = TRUE,     # Show risk table
-      risk.table.height = 0.25,
-      ggtheme = theme_bw(),
-      palette = "jco",
-      title = paste("Sobrevivência por", 
-                    switch(input$km_variable,
-                           "SEXO" = "Sexo",
-                           "FAIXAETAR" = "Faixa Etária",
-                           "GRUPO_EC" = "Estádio Clínico")),
-      xlab = "Tempo (dias)",
-      ylab = "Probabilidade de Sobrevivência",
-      break.time.by = 4,
-      legend = "right",
-      legend.title = "",
-      legend.labs = levels(df[[input$km_variable]])
-      )$plot
+    
+    ggplotly(
+      ggsurvplot(
+        fit,
+        data = df,
+        pval = FALSE,           # Add p-value
+        conf.int = input$show_ci,
+        
+        risk.table = TRUE,          # Ativa a tabela de risco
+        risk.table.col = "strata",  # Colore as linhas da tabela conforme os grupos
+        # risk.table.height = 0.25,   # Altura da tabela (ajustável)
+        
+        size = 0.5,
+        
+        censor.shape = "+",
+        censor.size = 2,
+        
+        ggtheme = theme_bw(),
+        palette = "jco",
+        title = paste("Sobrevivência por", 
+                      switch(input$km_variable,
+                             "SEXO" = "Sexo",
+                             "FAIXAETAR" = "Faixa Etária",
+                             "GRUPO_EC" = "Estádio Clínico")),
+        xlab = "Tempo (dias)",
+        ylab = "Probabilidade de Sobrevivência",
+        break.time.by = 4,
+        legend = "right",
+        legend.title = "",
+        legend.labs = levels(df[[input$km_variable]])
+        )$plot
+    )
     
   })
 }
+
