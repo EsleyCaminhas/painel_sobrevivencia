@@ -3,6 +3,8 @@
 
 ui <- dashboardPage(
   
+  skin = "blue",
+  
   #Cabecalho
   dashboardHeader(
     title = "Painel Sobrev"
@@ -13,7 +15,7 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("Sobre os dados",
                tabName = "Info"),
-      menuItem("Análises Gráficas",
+      menuItem("Análise das variáveis",
                tabName = "Graphs"),
       menuItem("Curvas de Kaplan-Meier",
                tabName = "KM")
@@ -59,11 +61,16 @@ ui <- dashboardPage(
               
               sidebarLayout(
                 sidebarPanel(
+                  
+                  h4(strong("Filtros para grupo e variável")),
+                  
+                  hr(),
+                  
                   width = 3,
                   
                   pickerInput(
                     inputId = "grupo_cid_1",
-                    label = "Topografia (grupo)", 
+                    label = "Selecione o grupo (topografia):", 
                     choices = c("C50 Mama" = "C50 Mama",
                                 "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
                                 "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
@@ -94,11 +101,13 @@ ui <- dashboardPage(
                   
                   selectInput(
                     inputId = "variavel_1",
-                    label = "Selecione a variável para o gráfico:",
+                    label = "Selecione a variável:",
                     choices = c("Sexo" = "SEXO",
                                 "Faixa etária" = "FAIXAETAR",
                                 "Estádio clínico" = "GRUPO_EC",
-                                "Desfecho Tratamento" = "ULTINFO"),
+                                "Tratamento" = "TRATAMENTO",
+                                "Desfecho Tratamento" = "ULTINFO"
+                                ),
                     selected = "SEXO"
                   )
                 ),
@@ -111,6 +120,7 @@ ui <- dashboardPage(
                 )
               )
       ),
+      
       #Secao com os graficos
       tabItem(tabName = "KM",
         sidebarLayout(
@@ -156,6 +166,7 @@ ui <- dashboardPage(
                           "Idade" = "IDADE",
                           "Faixa etária" = "FAIXAETAR",
                           "Estágio clínico" = "GRUPO_EC",
+                          "Tratamento" = "TRATAMENTO",
                           "Dias entre consulta e diagnóstico" = "CONSDIAG",
                           "Dias entre consulta e tratamento" = "TRATCONS",
                           "Dias entre diagnóstico e tratamento" = "DIAGTRAT",

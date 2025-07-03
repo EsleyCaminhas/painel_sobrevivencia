@@ -8,7 +8,7 @@ library(fst)
 
 ## Aqui vamos filtrar as CID's que iremos utilizar
 
-dados_cancer <- read.dbf("data/pacigeral.dbf") # disponivel no classroom
+# dados_cancer <- read.dbf("data/pacigeral.dbf") # disponivel no classroom
 
 # Neoplasias Urogenitais, Urinárias, Olho e Sistema Nervoso Central, 
 # Endócrinas e Secundárias/Mal Definidas 
@@ -41,13 +41,17 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
     DTTRAT, #Data de inicio do tratamento (Só para checar não entra na conta)
     NAOTRAT, #Código da razão para não realização do tratamento (Só para checar não entra na conta)
     
+    TRATAMENTO, #Código de combinação dos tratamentos realizados
+    
     DTULTINFO, #Data da ultima informacao do paciente 
     
     #Sobre desfecho
     ULTINFO, #Ultima informacao do paciente 
     ) |>
+  
   mutate(
-    TOPOGRUP_GRUPO = case_when(
+    TOPOGRUP_GRUPO = factor(
+      case_when(
       TOPOGRUP == "C50" ~ "C50 Mama",
       TOPOGRUP %in% c("C51", "C52", "C53", "C54", "C55", "C56", "C57", "C58") ~ "C51-C58 Órgãos genitais femininos",
       TOPOGRUP %in% c("C60", "C61", "C62", "C63") ~ "C60-C63 Órgãos genitais masculinos",
@@ -57,11 +61,36 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
       TOPOGRUP == "C76" ~ "C76 Out. localizações e localizações mal definidas",
       TOPOGRUP == "C77" ~ "C77 Linfonodos",
       TOPOGRUP == "C80" ~ "C80 Localização primária desconhecida",
-    ),
+    )),
       
-    SEXO = case_when(
-      SEXO == 1 ~ "Masculino",
-      SEXO == 2 ~ "Feminino"
+    SEXO = factor(
+      case_when(
+        SEXO == 1 ~ "Masculino",
+        SEXO == 2 ~ "Feminino"
+    )),
+    
+    FAIXAETAR = factor(
+      case_when(
+        FAIXAETAR == "00-09" ~ "0 a 9 anos",
+        FAIXAETAR == "10-19" ~ "10 a 19 anos",
+        FAIXAETAR == "20-29" ~ "20 a 29 anos",
+        FAIXAETAR == "30-39" ~ "30 a 39 anos",
+        FAIXAETAR == "40-49" ~ "40 a 49 anos",
+        FAIXAETAR == "50-59" ~ "50 a 59 anos",
+        FAIXAETAR == "60-69" ~ "60 a 69 anos",
+        FAIXAETAR == "70+" ~ "70 anos ou mais"
+      ),
+      levels = c(
+        "0 a 9 anos",
+        "10 a 19 anos",
+        "20 a 29 anos",
+        "30 a 39 anos",
+        "40 a 49 anos",
+        "50 a 59 anos",
+        "60 a 69 anos",
+        "70 anos ou mais"
+      ),
+      ordered = TRUE 
     ),
     
     DTULTINFO = dmy(as.character(DTULTINFO)),
@@ -71,34 +100,65 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
     TEMPO_OBS_CONSULT = as.numeric(DTULTINFO - DTCONSULT),
     TEMPO_OBS_TRAT = as.numeric(DTULTINFO - NAOTRAT),
     
-    #Estagio da doenca (precisa fazer um double check nisso aqui)
-    GRUPO_EC = case_when(
-      EC %in% c("0", "0A", "0IS", "IS") ~ "0",
-      EC %in% c("I", "IA", "IA1", "IA2", "IB", "IB1", "IB2", "IC") ~ "I",
-      EC %in% c("II", "IIA", "IIA1", "IIA2", "IIB", "IIC") ~ "II",
-      EC %in% c("III", "IIIA", "IIIB", "IIIC", "IIIC1", "IIIC2") ~ "III",
-      EC %in% c("IV", "IVA", "IVB", "IVC") ~ "IV",
-      EC == "X" ~ "X",
-      EC == "Y" ~ "Y"
+    #Tratamento
+    TRATAMENTO = factor(
+      case_when(
+        TRATAMENTO == "A" ~ "Cirurgia",
+        TRATAMENTO == "B" ~ "Radioterapia",
+        TRATAMENTO == "C" ~ "Quimio",
+        TRATAMENTO == "D" ~ "Cirurgia + Radioterapia",
+        TRATAMENTO == "E" ~ "Cirurgia + Quimio",
+        TRATAMENTO == "F" ~ "Radioterapia + Quimio",
+        TRATAMENTO == "G" ~ "Cirurgia + Radio + Quimio",
+        TRATAMENTO == "H" ~ "Cirurgia + Radio + Quimio + Hormonio",
+        TRATAMENTO == "I" ~ "Outras combinações de tratamento",
+        TRATAMENTO == "J" ~ "Nenhum tratamento realizado"
+      ),
+      levels = c(
+        "Cirurgia",
+        "Radioterapia",
+        "Quimio",
+        "Cirurgia + Radioterapia",
+        "Cirurgia + Quimio",
+        "Radioterapia + Quimio",
+        "Cirurgia + Radio + Quimio",
+        "Cirurgia + Radio + Quimio + Hormonio",
+        "Outras combinações de tratamento",
+        "Nenhum tratamento realizado"
+      ),
+      ordered = FALSE  # Se TRUE, define como variável ordinal (hierarquia entre categorias)
     ),
+    
+    #Estagio da doenca (precisa fazer um double check nisso aqui)
+    GRUPO_EC = factor(
+      case_when(
+        EC %in% c("0", "0A", "0IS", "IS") ~ "Estágio 0",
+        EC %in% c("I", "IA", "IA1", "IA2", "IB", "IB1", "IB2", "IC") ~ "Estágio I",
+        EC %in% c("II", "IIA", "IIA1", "IIA2", "IIB", "IIC") ~ "Estágio II",
+        EC %in% c("III", "IIIA", "IIIB", "IIIC", "IIIC1", "IIIC2") ~ "Estágio III",
+        EC %in% c("IV", "IVA", "IVB", "IVC") ~ "Estágio IV",
+        EC == "X" ~ "X",
+        EC == "Y" ~ "Y"
+    )),
     
     # 1 – VIVO, COM CÂNCER
     # 2 – VIVO, SOE
     # 3 – OBITO POR CANCER
     # 4 – OBITO POR OUTRAS CAUSAS, SOE
     
-    ULTINFO = case_when(
-      ULTINFO == 1 ~ "VIVO, COM CÂNCER",
-      ULTINFO == 2 ~ "VIVO, SOE",
-      ULTINFO == 3 ~ "OBITO POR CANCER",
-      ULTINFO == 4 ~ "OBITO POR OUTRAS CAUSAS, SOE"
-    ),
+    ULTINFO = factor(
+      case_when(
+        ULTINFO == 1 ~ "Vivo, com câncer",
+        ULTINFO == 2 ~ "Vivo, sem outra especificação",
+        ULTINFO == 3 ~ "Óbito por câncer",
+        ULTINFO == 4 ~ "Óbito por outras causas, sem outra especificação"
+    )),
     
     DESFECHO = case_when(
-      ULTINFO %in% c("VIVO, COM CÂNCER",
-                     "VIVO, SOE",
-                     "OBITO POR OUTRAS CAUSAS, SOE") ~ "0", #censurado
-      ULTINFO == "OBITO POR CANCER" ~ "1"
+      ULTINFO %in% c("Vivo, com câncer",
+                     "Vivo, sem outra especificação",
+                     "Óbito por outras causas, sem outra especificação") ~ "0", #censurado
+      ULTINFO == "Óbito por câncer" ~ "1"
     ),
     NAOTRAT = as.factor(NAOTRAT),
     DESFECHO = as.numeric(DESFECHO)
@@ -107,6 +167,7 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
 ## Salvando como data.table + FST 
 dados_cancer_dt <- as.data.table(dados_cancer_filtrado2)
 write_fst(dados_cancer_dt, "data/dados_cancer_filtrado.fst")
+
 
 
 

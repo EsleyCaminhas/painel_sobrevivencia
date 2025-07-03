@@ -9,6 +9,8 @@ dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
 
 server <- function(input, output) {
   
+  #### aba Análises Gráficas
+  
   #Objeto reativo, condicionada a inputs, quando chamar usar dados_filtrados()
   dados_filtrados <- reactive({
     dados_cancer |>
@@ -20,45 +22,40 @@ server <- function(input, output) {
     #Mensagem para quando nenhum grupo de CID for selecionado 
     if(nrow(dados_filtrados()) == 0) {
       return(
-        highchart() %>%
-          hc_title(text = "Nenhum dado disponível") %>%
-          hc_subtitle(text = "Selecione outros filtros") %>%
+        highchart() |>
+          hc_title(text = "Nenhum dado disponível") |>
+          hc_subtitle(text = "Selecione outros filtros") |>
           hc_add_theme(hc_theme_null())  # Tema limpo sem eixos
       )
     }
     
-    contagem <- dados_filtrados() %>% 
+    contagem <- dados_filtrados() |>
       count(.data[[input$variavel_1]])
+    
+    nome_var <- case_when(input$variavel_1 == "SEXO" ~ "Sexo",
+                          input$variavel_1 == "FAIXAETAR" ~ "Faixa etária",
+                          input$variavel_1 == "GRUPO_EC" ~ "Estádio clínico",
+                          input$variavel_1 == "ULTINFO" ~ "Desfecho Tratamento",
+                          input$variavel_1 == "TRATAMENTO" ~ "Tratamento")
     
     hchart(contagem, "column", 
            hcaes(x = !!sym(input$variavel_1), y = n),
            name = "Número de observações",
-           color = "#4682B4") %>%
-      hc_title(text = paste("Distribuição por", input$variavel_1)) %>%
-      hc_xAxis(title = list(text = input$variavel_1)) %>%
-      hc_yAxis(title = list(text = "Número de observações"))
+           color = "#4682B4") |>
+      hc_title(text = paste("Frequência observada para a variável ", nome_var)) |>
+      hc_xAxis(title = list(text = nome_var)) |>
+      hc_yAxis(max = max(20000, max(contagem$n, na.rm = TRUE)),
+               title = list(text = "Número de observações")) 
   })
   
-  output$vazio <- renderHighchart({
-    
-      highchart() %>%
-        hc_title(text = "Vazio") %>%
-        hc_subtitle(text = "Vazio") %>%
-        hc_add_theme(hc_theme_null())  # Tema limpo sem eixos
-
-  })
-  
-  #######################
-  #######################
-  #######################
-  library(survival)
-  library(survminer)
+  #### aba Curvas de Kaplan-Meier
 
   # Update selectInput choices
   dados_filtrados_km <- reactive({
     dados_cancer |> 
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2)  # Note: grupo_cid_2
   })
+  
   # Generate Kaplan-Meier plot
   output$km_plot <- renderPlot({
     req(input$km_variable,input$len_tempo,input$Tempo_int, dados_filtrados_km())
