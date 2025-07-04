@@ -19,18 +19,19 @@ server <- function(input, output) {
     dados_cancer |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_1)
   })
+  
+  output$alert_box1 <- renderUI({
+    if(length(input$grupo_cid_1) < 1) {
+      div(class = "alert alert-warning",
+          icon("exclamation-triangle"),
+          "Selecione, pelo menos, uma variável para visualizar o gráfico.")
+    }
+  })
 
   
   output$grafico_barras <- renderHighchart({
     
-    if(nrow(dados_filtrados()) == 0) {
-      return(
-        highchart() |>
-          hc_title(text = "Nenhum dado disponível") |>
-          hc_subtitle(text = "Selecione outros filtros") |>
-          hc_add_theme(hc_theme_null()) 
-      )
-    }
+    req(input$grupo_cid_1)
     
     contagem <- dados_filtrados() |>
       count(.data[[input$variavel_1]])
@@ -97,9 +98,17 @@ server <- function(input, output) {
     
   })
   
-
+  output$alert_box2 <- renderUI({
+    if(length(input$grupo_cid_2) < 1) {
+      div(class = "alert alert-warning",
+          icon("exclamation-triangle"),
+          "Selecione, pelo menos, uma variável para visualizar o gráfico.")
+    }
+  })
   
   output$km_plot <- renderHighchart({
+    
+    req(input$grupo_cid_2)
     
     dados <- dados_filtrados_km()
     
@@ -140,6 +149,8 @@ server <- function(input, output) {
   ## Tabela Kaplan-Meier
   
   output$tabelas_por_grupo <- renderUI({
+    
+    req(input$grupo_cid_2)
     
     dados <- dados_filtrados_km() |> arrange(Grupo)
 
@@ -201,6 +212,14 @@ server <- function(input, output) {
     )
   })
   
+  output$alert_box3 <- renderUI({
+    if(length(input$grupo_cid_3) < 1) {
+      div(class = "alert alert-warning",
+          icon("exclamation-triangle"),
+          "Selecione, pelo menos, uma variável para visualizar o gráfico.")
+    }
+  })
+  
   ## Gráfico função de risco
   
   dados_filtrados_hazard <- reactive({
@@ -215,6 +234,8 @@ server <- function(input, output) {
   })
   
   output$hazard_plot <- renderHighchart({
+    
+    req(input$grupo_cid_3)
     
     dados <- dados_filtrados_hazard()
     
@@ -256,6 +277,6 @@ server <- function(input, output) {
       hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal")
   })
   
-  
+  ##############################################################################
   
 }

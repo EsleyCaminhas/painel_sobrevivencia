@@ -142,6 +142,9 @@ ui <- dashboardPage(
                 ),
                 
                 mainPanel(
+                  
+                  uiOutput("alert_box1"),
+                  
                   withSpinner(
                     highchartOutput("grafico_barras"),
                     type = 6
@@ -237,6 +240,9 @@ ui <- dashboardPage(
             )
             ),
           mainPanel(
+            
+            uiOutput("alert_box2"),
+            
             withSpinner(
               highchartOutput("km_plot", height = "600px"),
               type = 6
@@ -319,6 +325,9 @@ ui <- dashboardPage(
                   )
                 ),
                 mainPanel(
+                  
+                  uiOutput("alert_box3"),
+                  
                   withSpinner(
                     highchartOutput("hazard_plot", height = "600px"),
                     type = 6
