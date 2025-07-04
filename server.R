@@ -46,26 +46,28 @@ server <- function(input, output) {
         ))
   })
   
+  janela_tempo <- reactive({
+    case_when(
+    input$len_tempo == "MESES" ~ "Tempo (meses)",
+    input$len_tempo == "TRI" ~ "Tempo (trimestres)",
+    input$len_tempo == "ANO" ~ "Tempo (anos)"
+    )
+  })
+  
   #### aba Curvas de Kaplan-Meier
   
   dados_filtrados_km <- reactive({
     dados_cancer |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2) |>
       select(tempo = paste0("TEMPO_OBS_",input$Tempo_int,"_",input$len_tempo),
-             variavel = input$km_variable,
+             Grupo = input$km_variable,
              DESFECHO
       ) |>
-      mutate(variavel = as.factor(variavel)) |>
+      mutate(Grupo = as.factor(Grupo)) |>
       as.data.frame()
   })
   
   output$km_plot <- renderHighchart({
-    
-    janela_tempo <- case_when(
-      input$len_tempo == "MESES" ~ "Tempo (meses)",
-      input$len_tempo == "TRI" ~ "Tempo (trimestres)",
-      input$len_tempo == "ANO" ~ "Tempo (anos)"
-    )
     
     dados <- dados_filtrados_km()
     
@@ -90,11 +92,13 @@ server <- function(input, output) {
     #   levels_variavel <- levels(dados$variavel)
     # }
     
-    fit <- survfit(Surv(tempo, DESFECHO) ~ variavel, data = dados)
+    fit <- survfit(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
+    
+    # print(summary(fit))
     
     hchart(fit, type = "line", ranges = input$show_ci) |>
       hc_title(text = "Gráfico de Sobrevivência") |>
-      hc_xAxis(title = list(text = janela_tempo)) |>
+      hc_xAxis(title = list(text = janela_tempo())) |>
       hc_yAxis(title = list(text = "Probabilidade de Sobrevivência"),
                labels = list(formatter = JS("function() { return Highcharts.numberFormat(this.value, 3); }"))) |>
       hc_tooltip(
@@ -103,14 +107,14 @@ server <- function(input, output) {
           if (typeof this.point.low !== 'undefined' && typeof this.point.high !== 'undefined') {
 
             return '<b> Intervalo </b><br/>' +
-                   '", janela_tempo, ": <b>' + this.x + '</b><br/>' +
+                   '", janela_tempo(), ": <b>' + this.x + '</b><br/>' +
                    'IC%: <b>' + Highcharts.numberFormat(this.point.low, 3) + 
                    ' - ' + Highcharts.numberFormat(this.point.high, 3) + '</b>';
           
           } else {
           
             return '<b>' + this.series.name + '</b><br/>' +
-                   '", janela_tempo, ": <b>' + this.x + '</b><br/>' +
+                   '", janela_tempo(), ": <b>' + this.x + '</b><br/>' +
                    'Sobrevivência: <b>' + Highcharts.numberFormat(this.y, 3) + '</b>';
           
           }
@@ -119,8 +123,98 @@ server <- function(input, output) {
         crosshairs = TRUE
       ) |>
       hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal") |>
-      hc_colors(colors = viridis::viridis(length(levels(dados$variavel)))) |>
+      hc_colors(colors = viridis::viridis(length(levels(dados$Grupo)))) |>
       hc_plotOptions(series = list(marker = list(radius = 0)))
+  })
+  
+  ##############################################################################
+  
+  # output$km_summary <- renderDT({
+  #   dados <- dados_filtrados_km()
+  #   fit <- survfit(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
+  #   
+  #   sum_fit <- summary(fit)
+  #   
+  #   table <- data.frame(
+  #     tempo = sum_fit$time,
+  #     Group = sum_fit$strata,
+  #     Sobrevivência = sum_fit$surv,
+  #     Erro.Padrão = sum_fit$std.err, 
+  #     IC.Inferior = sum_fit$lower, 
+  #     IC.Superior = sum_fit$upper,  
+  #     Eventos = sum_fit$n.event,  
+  #     Em.Risco = sum_fit$n.risk     
+  #   )
+  #   
+  #   
+  #   
+  #   datatable(table, 
+  #             options = list(pageLength = 10,
+  #                            language = list(    
+  #                              url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
+  #                            ),
+  #                            dom = 't', 
+  #                            paging = FALSE, 
+  #                            searching = FALSE,
+  #                            info = FALSE,
+  #                            ordering = FALSE),
+  #             rownames = FALSE
+  #             ) |>
+  #     formatRound(columns = c('Sobrevivência', 'Erro.Padrão', 'IC.Inferior', 'IC.Superior'), 
+  #                 digits = 4)
+  # })
+  
+  
+  output$tabelas_por_grupo <- renderUI({
+    
+    dados <- dados_filtrados_km() |> arrange(Grupo)
+
+    fit <- survfit(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
+
+    grupos <- unique(dados$Grupo)
+    
+    # Cria uma lista de elementos UI para cada grupo
+    tabelas <- map(grupos, ~ {
+      sum_fit <- summary(fit[.x])
+      
+      tabela <- data.frame(
+        tempo = sum_fit$time,
+        Sobrevivência = sum_fit$surv,
+        Erro_Padrão = sum_fit$std.err,
+        IC_Inferior = sum_fit$lower,
+        IC_Superior = sum_fit$upper,
+        Eventos = sum_fit$n.event,
+        Censuras = sum_fit$n.censor,
+        Em_Risco = sum_fit$n.risk
+      )
+      
+      names(tabela)[1] <- janela_tempo()
+      
+      tagList(
+        h4(paste("Grupo:", .x)),
+        renderDT({
+          datatable(
+            tabela,
+            options = list(pageLength = 10,
+                           lengthChange = FALSE,
+                           language = list(    
+                             url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
+                           ),
+                           # dom = 't',
+                           # paging = FALSE, 
+                           ordering = FALSE,
+                           searching = FALSE,
+                           info = FALSE),
+            rownames = FALSE
+          ) |>
+            formatRound(columns = c('Sobrevivência', 'Erro_Padrão', 'IC_Inferior', 'IC_Superior'), 
+                        digits = 4)
+        
+        })
+      )
+    })
+    
+    do.call(tagList, tabelas)
   })
   
 }

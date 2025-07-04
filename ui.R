@@ -7,53 +7,82 @@ ui <- dashboardPage(
   
   #Cabecalho
   dashboardHeader(
-    title = "Painel Sobrev"
+    title = "Painel ASO",
+    tags$li(class = "dropdown",
+            tags$style(".justified-text { text-align: justify; }")
+    )
   ),
   
   #Barra lateral
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Sobre os dados",
+      menuItem("Sobre o painel",
                tabName = "Info"),
       menuItem("Análise das variáveis",
                tabName = "Graphs"),
       menuItem("Curvas de Kaplan-Meier",
                tabName = "KM")
+      # menuItem("Função de Risco",
+      #          tabName = "Hazard")
     )
   ),
   
   #Corpo principal
   dashboardBody(
+    
+    tags$style("justified-text { text-align: justify; }"),
+    
     tabItems(
       
       #Secao com as informacoes
       tabItem(tabName = "Info",
             
-              h2("Lorem Ipsum Dolor Sit Amet"),
+              h2("Painel de Análise de Sobrevivência Oncológica"),
               
               p(
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor,
-              nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies
-              nisl nisl eget nisl. Nullam auctor, nisl eget ultricies tincidunt,
-              nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl."
+                "Seja bem vinda(o)!"
               ),
-      
+              
               p(
-                "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere
-              cubilia curae; Nullam auctor, nisl eget ultricies tincidunt, nisl nisl
-              aliquam nisl, eget ultricies nisl nisl eget nisl. Donec euismod, nisl
-              eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl
-              nisl eget nisl."
+                class = "justified-text",
+                "Este painel foi desenvolvido como parte do seminário apresentado à disciplina de Análise de Sobrevivência, ministrada ao curso de Estatística da Universidade Federal do Espírito Santo.
+                Seu objetivo é permitir a exploração e a análise visual de dados de sobrevivência de pacientes oncológicos, provenientes da Fundação Oncocentro de São Paulo (FOSP), instituição de referência vinculada à Secretaria de Estado de São Paulo.
+                "
+              ),
+              
+              p(
+                class = "justified-text",
+                "A FOSP é uma das principais fontes de dados oncológicos no Brasil, mantendo registros hospitalares de grande relevância para a pesquisa e o desenvolvimento de políticas públicas de combate ao câncer no país.
+                "
               ),
               
               br(),
               
-              h3("Pellentesque Habitant Morbi"),
+              h3("Sobre os Dados"),
               
               p(
-                "Pellentesque habitant morbi tristique senectus et netus et malesuada fames
-              ac turpis egestas. Nullam auctor, nisl eget ultricies tincidunt, nisl
-              nisl aliquam nisl, eget ultricies nisl nisl eget nisl."
+                class = "justified-text",
+                "Os dados utilizados neste painel compreendem um subconjunto específico de tipos de câncer, agrupados por topografia, segundo a Classificação Internacional de Doenças para Oncologia (CID-O), correspondendo aos códigos de CID C50 a CID C80. Este grupo engloba:"
+              ),
+              
+              tags$ul(
+                tags$li("C50:  Mama"),
+                tags$li("C51-C58: Órgãos genitais femininos"),
+                tags$li("C60-C63: Órgãos genitais masculinos"),
+                tags$li("C64-C68: Trato urinário"),
+                tags$li("C69-C72: Olho, cérebro e outras partes do SNC"),
+                tags$li("C73-C75: Tiróide e outras glândulas"),
+                tags$li("C76: Outras localizações e localizações mal definidas"),
+                tags$li("C77: Linfonodos"),
+                tags$li("C80: Localização primária desconhecida")
+              ),
+              
+              br(),
+              
+              p(
+                class = "justified-text",
+                "Para mais informações sobre a FOSP visite o site:",
+                a("https://fosp.saude.sp.gov.br/", href="https://fosp.saude.sp.gov.br/"),
               )
       ),
       #Secao com os graficos
@@ -125,11 +154,16 @@ ui <- dashboardPage(
       tabItem(tabName = "KM",
         sidebarLayout(
           sidebarPanel(
+            
+            h4(strong("Filtros para grupo e variável")),
+            
+            hr(),
+            
             width = 3,
 
             pickerInput(
               inputId = "grupo_cid_2",
-              label = "Topografia (grupo)",
+              label = "Selecione o grupo (topografia):",
               choices = c("C50 Mama" = "C50 Mama",
                           "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
                           "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
@@ -160,7 +194,7 @@ ui <- dashboardPage(
 
             selectInput(
               inputId = "km_variable",
-              label = "Selecione a variável para o gráfico:",
+              label = "Selecione a variável:",
               choices = c(
                           "Sexo" = "SEXO",
                           # "Idade" = "IDADE",
@@ -177,6 +211,13 @@ ui <- dashboardPage(
                           # "Motivo de não tratamento" = "NAOTRAT"),
               selected = "SEXO"
               ),
+            
+            br(),
+            
+            h4(strong("Filtros relacionados ao tempo de acompanhamento")),
+            
+            hr(),
+            
             selectInput(
               inputId = "Tempo_int",
               label = "Selecione o inicio do acompanhamento:",
@@ -187,12 +228,14 @@ ui <- dashboardPage(
           
             selectInput(
               inputId = "len_tempo",
-              label = "Selecione a janela de tempo:",
+              label = "Selecione a unidade de tempo:",
               choices = c("Meses (30 dias)" = "MESES",
                           "Trimestres (90 dias)" = "TRI",
                           "Anos (365 dias)" = "ANO"),
               selected = "ANO"
               ),
+            
+            hr(),
             
             shinyWidgets::materialSwitch(
               inputId = "show_ci",
@@ -204,6 +247,10 @@ ui <- dashboardPage(
           mainPanel(
             withSpinner(
               highchartOutput("km_plot", height = "600px"),
+              type = 6
+            ),
+            withSpinner(
+              uiOutput("tabelas_por_grupo"),
               type = 6
             )
           )

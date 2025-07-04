@@ -18,5 +18,7 @@ library(dplyr)
 library(survival)
 library(survminer)
 
-library(plotly)
+# library(plotly)
 library(DT)
+
+library(purrr)
