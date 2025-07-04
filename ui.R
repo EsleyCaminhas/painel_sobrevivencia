@@ -3,7 +3,7 @@
 
 ui <- dashboardPage(
   
-  skin = "blue",
+  skin = "purple",
   
   #Cabecalho
   dashboardHeader(
@@ -16,14 +16,14 @@ ui <- dashboardPage(
   #Barra lateral
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Sobre o painel",
+      menuItem("Sobre o Painel",
                tabName = "Info"),
-      menuItem("Análise das variáveis",
+      menuItem("Análise das Variáveis",
                tabName = "Graphs"),
       menuItem("Curvas de Kaplan-Meier",
-               tabName = "KM")
-      # menuItem("Função de Risco",
-      #          tabName = "Hazard")
+               tabName = "KM"),
+      menuItem("Função de Risco",
+               tabName = "Hazard")
     )
   ),
   
@@ -131,19 +131,19 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "variavel_1",
                     label = "Selecione a variável:",
-                    choices = c("Sexo" = "SEXO",
-                                "Faixa etária" = "FAIXAETAR",
+                    choices = c("Faixa etária" = "FAIXAETAR",
+                                "Sexo" = "SEXO",
                                 "Estádio clínico" = "GRUPO_EC",
                                 "Tratamento" = "TRATAMENTO",
                                 "Desfecho Tratamento" = "ULTINFO"
                                 ),
-                    selected = "SEXO"
+                    selected = "FAIXAETAR"
                   )
                 ),
                 
                 mainPanel(
                   withSpinner(
-                    plotlyOutput("grafico_barras"),
+                    highchartOutput("grafico_barras"),
                     type = 6
                   )
                 )
@@ -195,21 +195,13 @@ ui <- dashboardPage(
             selectInput(
               inputId = "km_variable",
               label = "Selecione a variável:",
-              choices = c(
-                          "Sexo" = "SEXO",
-                          # "Idade" = "IDADE",
+              choices = c(                          
                           "Faixa etária" = "FAIXAETAR",
+                          "Sexo" = "SEXO",
+                          "Idade" = "IDADE",
                           "Estágio clínico" = "GRUPO_EC",
                           "Tratamento" = "TRATAMENTO"),
-                          # "Dias entre consulta e diagnóstico" = "CONSDIAG",
-                          # "Dias entre consulta e tratamento" = "TRATCONS",
-                          # "Dias entre diagnóstico e tratamento" = "DIAGTRAT",
-                          #"Data da primeira consulta" = "DTCONSULT",
-                          #"Data do diagnóstico" = "DTDIAG",
-                          #"Data de início do tratamento" = "DTTRAT",
-                          #"Data da última informação" = "DTULTINFO",
-                          # "Motivo de não tratamento" = "NAOTRAT"),
-              selected = "SEXO"
+              selected = "FAIXAETAR"
               ),
             
             br(),
@@ -232,7 +224,7 @@ ui <- dashboardPage(
               choices = c("Meses (30 dias)" = "MESES",
                           "Trimestres (90 dias)" = "TRI",
                           "Anos (365 dias)" = "ANO"),
-              selected = "ANO"
+              selected = "TRI"
               ),
             
             hr(),
@@ -255,6 +247,84 @@ ui <- dashboardPage(
             )
           )
         )
+      ),
+      ##########################################################################
+      
+      tabItem(tabName = "Hazard",
+              sidebarLayout(
+                sidebarPanel(
+                  
+                  h4(strong("Filtros para grupo e variável")),
+                  
+                  hr(),
+                  
+                  width = 3,
+                  
+                  pickerInput(
+                    inputId = "grupo_cid_3",
+                    label = "Selecione o grupo (topografia):",
+                    choices = c("C50 Mama" = "C50 Mama",
+                                "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
+                                "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
+                                "C64-C68 Trato urinário" = "C64-C68 Trato urinário",
+                                "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC",
+                                "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas",
+                                "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas",
+                                "C77 Linfonodos" = "C77 Linfonodos",
+                                "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
+                    selected = c("C69-C72 Olho, cérebro e outras partes do SNC"),
+                    multiple = TRUE,
+                    options = list(
+                      `actions-box` = TRUE,
+                      `selected-text-format` = "count > 8",
+                      `count-selected-text` = "C50-C80",
+                      `none-selected-text` = "Nenhum item selecionado",
+                      `deselect-all-text` = "Desselecionar todas",
+                      `select-all-text` = "Selecionar todas"
+                    )),
+                  
+                  selectInput(
+                    inputId = "hazard_variable",
+                    label = "Selecione a variável:",
+                    choices = c(
+                      "Sexo" = "SEXO",
+                      # "Idade" = "IDADE",
+                      "Faixa etária" = "FAIXAETAR",
+                      "Estágio clínico" = "GRUPO_EC",
+                      "Tratamento" = "TRATAMENTO"),
+                    selected = "FAIXAETAR"
+                  ),
+                  
+                  br(),
+                  
+                  h4(strong("Filtros relacionados ao tempo de acompanhamento")),
+                  
+                  hr(),
+                  
+                  selectInput(
+                    inputId = "Tempo_int2",
+                    label = "Selecione o inicio do acompanhamento:",
+                    choices = c("Diagnóstico" = "DIAG",
+                                "Consulta" = "CONSULT"),
+                    selected = "DIAG"
+                  ),
+                  
+                  selectInput(
+                    inputId = "len_tempo2",
+                    label = "Selecione a unidade de tempo:",
+                    choices = c("Meses (30 dias)" = "MESES",
+                                "Trimestres (90 dias)" = "TRI",
+                                "Anos (365 dias)" = "ANO"),
+                    selected = "TRI"
+                  )
+                ),
+                mainPanel(
+                  withSpinner(
+                    highchartOutput("hazard_plot", height = "600px"),
+                    type = 6
+                  )
+                )
+              )
       )
     )
   )

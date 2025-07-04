@@ -9,8 +9,6 @@ library(shinycssloaders)
 library(shinyWidgets)
 
 library(highcharter)
-
-# library(data.table)
 library(fst)
 
 library(dplyr)
@@ -18,7 +16,7 @@ library(dplyr)
 library(survival)
 library(survminer)
 
-# library(plotly)
-library(DT)
 
+library(DT)
 library(purrr)
+library(muhaz)
