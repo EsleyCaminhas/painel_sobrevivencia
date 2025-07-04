@@ -8,7 +8,7 @@ library(fst)
 
 ## Aqui vamos filtrar as CID's que iremos utilizar
 
-# dados_cancer <- read.dbf("data/pacigeral.dbf") # disponivel no classroom
+dados_cancer <- read.dbf("data/pacigeral.dbf") # disponivel no classroom
 
 # Neoplasias Urogenitais, Urinárias, Olho e Sistema Nervoso Central, 
 # Endócrinas e Secundárias/Mal Definidas 
@@ -96,10 +96,18 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
     DTULTINFO = dmy(as.character(DTULTINFO)),
     
     #Tempo observado
-    TEMPO_OBS_DIAG = as.numeric(DTULTINFO - DTDIAG),
-    TEMPO_OBS_CONSULT = as.numeric(DTULTINFO - DTCONSULT),
-    TEMPO_OBS_TRAT = as.numeric(DTULTINFO - NAOTRAT),
+    TEMPO_OBS_DIAG_DIAS = as.numeric(DTULTINFO - DTDIAG),
+    TEMPO_OBS_CONSULT_DIAS = as.numeric(DTULTINFO - DTCONSULT),
     
+    TEMPO_OBS_DIAG_MESES = floor(as.numeric(DTULTINFO - DTDIAG) / 30) + 1,
+    TEMPO_OBS_CONSULT_MESES = floor(as.numeric(DTULTINFO - DTCONSULT) / 30) + 1,
+    
+    TEMPO_OBS_DIAG_TRI = floor(as.numeric(DTULTINFO - DTDIAG) / 90) + 1,
+    TEMPO_OBS_CONSULT_TRI = floor(as.numeric(DTULTINFO - DTCONSULT) / 90) + 1,
+    
+    TEMPO_OBS_DIAG_ANO = floor(as.numeric(DTULTINFO - DTDIAG) / 365) + 1,
+    TEMPO_OBS_CONSULT_ANO = floor(as.numeric(DTULTINFO - DTCONSULT) / 365) + 1,
+
     #Tratamento
     TRATAMENTO = factor(
       case_when(
@@ -163,6 +171,19 @@ dados_cancer_filtrado2 <- dados_cancer_filtrado1 |>
     NAOTRAT = as.factor(NAOTRAT),
     DESFECHO = as.numeric(DESFECHO)
   )
+
+# ## encontrando ponto de corte para algumas variaveis
+# 
+# cutpoint_idade <- surv_cutpoint(
+#   data = dados_cancer_filtrado2,
+#   time = "TEMPO_OBS_DIAG_TRI",
+#   event = "DESFECHO",
+#   variables = "IDADE"
+# )
+# 
+# (cutpoint_idade$cutpoint)$cutpoint
+# 
+# dados_cancer_filtrado2$CUT_IDADE <- surv_categorize(cutpoint_idade)$IDADE
 
 ## Salvando como data.table + FST 
 dados_cancer_dt <- as.data.table(dados_cancer_filtrado2)

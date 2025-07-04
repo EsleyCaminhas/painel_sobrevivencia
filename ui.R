@@ -114,7 +114,7 @@ ui <- dashboardPage(
                 
                 mainPanel(
                   withSpinner(
-                    highchartOutput("grafico_barras"),
+                    plotlyOutput("grafico_barras"),
                     type = 6
                   )
                 )
@@ -163,51 +163,47 @@ ui <- dashboardPage(
               label = "Selecione a variável para o gráfico:",
               choices = c(
                           "Sexo" = "SEXO",
-                          "Idade" = "IDADE",
+                          # "Idade" = "IDADE",
                           "Faixa etária" = "FAIXAETAR",
                           "Estágio clínico" = "GRUPO_EC",
-                          "Tratamento" = "TRATAMENTO",
-                          "Dias entre consulta e diagnóstico" = "CONSDIAG",
-                          "Dias entre consulta e tratamento" = "TRATCONS",
-                          "Dias entre diagnóstico e tratamento" = "DIAGTRAT",
+                          "Tratamento" = "TRATAMENTO"),
+                          # "Dias entre consulta e diagnóstico" = "CONSDIAG",
+                          # "Dias entre consulta e tratamento" = "TRATCONS",
+                          # "Dias entre diagnóstico e tratamento" = "DIAGTRAT",
                           #"Data da primeira consulta" = "DTCONSULT",
                           #"Data do diagnóstico" = "DTDIAG",
                           #"Data de início do tratamento" = "DTTRAT",
                           #"Data da última informação" = "DTULTINFO",
-                          "Motivo de não tratamento" = "NAOTRAT"),
+                          # "Motivo de não tratamento" = "NAOTRAT"),
               selected = "SEXO"
               ),
             selectInput(
               inputId = "Tempo_int",
-              label = "Selecione o tempo de interesse:",
-              choices = c("TEMPO_OBS_DIAG" = "TEMPO_OBS_DIAG",
-                          "TEMPO_OBS_CONSULT" = "TEMPO_OBS_CONSULT",
-                          "TEMPO_OBS_TRAT" = "TEMPO_OBS_TRAT"),
-              selected = "TEMPO_OBS_DIAG"
+              label = "Selecione o inicio do acompanhamento:",
+              choices = c("Diagnóstico" = "DIAG",
+                          "Consulta" = "CONSULT"),
+              selected = "DIAG"
               ),
           
             selectInput(
               inputId = "len_tempo",
-              label = "Selecione o intervalo de tempo:",
-              choices = c("diário" = 1,
-                          "mensal" = 30,
-                          "trimestral" = 90,
-                          "anual" = 365),
-              selected = 365
+              label = "Selecione a janela de tempo:",
+              choices = c("Meses (30 dias)" = "MESES",
+                          "Trimestres (90 dias)" = "TRI",
+                          "Anos (365 dias)" = "ANO"),
+              selected = "ANO"
               ),
+            
             shinyWidgets::materialSwitch(
               inputId = "show_ci",
-              label = "Mostrar intervalo de confiança", 
+              label = "Mostrar o intervalo de confiança?", 
               value = FALSE,
               status = "info"
             )
             ),
-          
-          
-
           mainPanel(
             withSpinner(
-              plotlyOutput("km_plot", height = "600px"),
+              highchartOutput("km_plot", height = "600px"),
               type = 6
             )
           )

@@ -1,8 +1,8 @@
-
 ## server.R
 
 dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
-                         as.data.table = TRUE) 
+                         as.data.table = TRUE) |>
+                filter(TEMPO_OBS_DIAG_MESES > 0)
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
@@ -17,17 +17,7 @@ server <- function(input, output) {
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_1)
   })
   
-  output$grafico_barras <- renderHighchart({
-    
-    #Mensagem para quando nenhum grupo de CID for selecionado 
-    if(nrow(dados_filtrados()) == 0) {
-      return(
-        highchart() |>
-          hc_title(text = "Nenhum dado disponível") |>
-          hc_subtitle(text = "Selecione outros filtros") |>
-          hc_add_theme(hc_theme_null())  # Tema limpo sem eixos
-      )
-    }
+  output$grafico_barras <- renderPlotly({
     
     contagem <- dados_filtrados() |>
       count(.data[[input$variavel_1]])
@@ -38,80 +28,99 @@ server <- function(input, output) {
                           input$variavel_1 == "ULTINFO" ~ "Desfecho Tratamento",
                           input$variavel_1 == "TRATAMENTO" ~ "Tratamento")
     
-    hchart(contagem, "column", 
-           hcaes(x = !!sym(input$variavel_1), y = n),
-           name = "Número de observações",
-           color = "#4682B4") |>
-      hc_title(text = paste("Frequência observada para a variável ", nome_var)) |>
-      hc_xAxis(title = list(text = nome_var)) |>
-      hc_yAxis(max = max(20000, max(contagem$n, na.rm = TRUE)),
-               title = list(text = "Número de observações")) 
+    plot_ly(
+      data = contagem,
+      x = ~get(input$variavel_1),
+      y = ~n,
+      type = "bar",
+      marker = list(color = "#4682B4"),
+      name = "Número de observações"
+    ) |>
+      layout(
+        title = paste("Frequência observada para a variável", nome_var),
+        xaxis = list(title = nome_var),
+        yaxis = list(
+          title = "Número de observações",
+          range = c(0, max(20000, max(contagem$n, na.rm = TRUE))),
+          tickformat = ",d"
+        ))
   })
   
   #### aba Curvas de Kaplan-Meier
-
-  # Update selectInput choices
+  
   dados_filtrados_km <- reactive({
-    dados_cancer |> 
-      filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2)  # Note: grupo_cid_2
+    dados_cancer |>
+      filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2) |>
+      select(tempo = paste0("TEMPO_OBS_",input$Tempo_int,"_",input$len_tempo),
+             variavel = input$km_variable,
+             DESFECHO
+      ) |>
+      mutate(variavel = as.factor(variavel)) |>
+      as.data.frame()
   })
   
-  # Generate Kaplan-Meier plot
-  output$km_plot <- renderPlotly({
-    req(input$km_variable,input$len_tempo,input$Tempo_int, dados_filtrados_km())
-    df <- dados_filtrados_km()
-    df$Tempo_int <- (df[[input$Tempo_int]])
-    df <- df %>%
-      mutate(Tempo_int = floor(Tempo_int / as.numeric(input$len_tempo)) + 1)  # Starts at 1
+  output$km_plot <- renderHighchart({
     
-    df$VAR_KM <- (df[[input$km_variable]])
-
-    if (is.numeric(df$VAR_KM)) {
-            cutpoint <- surv_cutpoint(
-        data = df,
-        time = "Tempo_int",
-        event = "DESFECHO",
-        variables = "VAR_KM"
-      )
-      df$VAR_KM <- surv_categorize(cutpoint)$VAR_KM
-    }
-    
-    
-    df$VAR_KM <- as.factor(df$VAR_KM)
-    fit <- survfit(Surv(Tempo_int, DESFECHO) ~VAR_KM, data = df)
-    
-    ggplotly(
-      ggsurvplot(
-        fit,
-        data = df,
-        pval = FALSE,           # Add p-value
-        conf.int = input$show_ci,
-        
-        risk.table = TRUE,          # Ativa a tabela de risco
-        risk.table.col = "strata",  # Colore as linhas da tabela conforme os grupos
-        # risk.table.height = 0.25,   # Altura da tabela (ajustável)
-        
-        size = 0.5,
-        
-        censor.shape = "+",
-        censor.size = 2,
-        
-        ggtheme = theme_bw(),
-        palette = "jco",
-        title = paste("Sobrevivência por", 
-                      switch(input$km_variable,
-                             "SEXO" = "Sexo",
-                             "FAIXAETAR" = "Faixa Etária",
-                             "GRUPO_EC" = "Estádio Clínico")),
-        xlab = "Tempo (dias)",
-        ylab = "Probabilidade de Sobrevivência",
-        break.time.by = 4,
-        legend = "right",
-        legend.title = "",
-        legend.labs = levels(df[[input$km_variable]])
-        )$plot
+    janela_tempo <- case_when(
+      input$len_tempo == "MESES" ~ "Tempo (meses)",
+      input$len_tempo == "TRI" ~ "Tempo (trimestres)",
+      input$len_tempo == "ANO" ~ "Tempo (anos)"
     )
     
-  })
-}
+    dados <- dados_filtrados_km()
+    
+    # if (input$km_variable %in% c("Idade",)) {
+    #   
+    #   cutpoint <- surv_cutpoint(
+    #     data = dados,
+    #     time = "Tempo",
+    #     event = "DESFECHO",
+    #     variables = "variavel"
+    #   )
+    #   
+    #   df$variavel <- surv_categorize(cutpoint)$variavel
+    #   
+    #   df$variavel <- case_when(
+    #     variavel == "high" ~ paste0(">", (cutpoint$cutpoint)$cutpoint),
+    #     variavel == "low" ~ paste0("<", (cutpoint$cutpoint)$cutpoint)
+    #   )
+    #   
+    # } else {
+    #   dados$variavel <- as.factor(dados$variavel)
+    #   levels_variavel <- levels(dados$variavel)
+    # }
+    
+    fit <- survfit(Surv(tempo, DESFECHO) ~ variavel, data = dados)
+    
+    hchart(fit, type = "line", ranges = input$show_ci) |>
+      hc_title(text = "Gráfico de Sobrevivência") |>
+      hc_xAxis(title = list(text = janela_tempo)) |>
+      hc_yAxis(title = list(text = "Probabilidade de Sobrevivência"),
+               labels = list(formatter = JS("function() { return Highcharts.numberFormat(this.value, 3); }"))) |>
+      hc_tooltip(
+        formatter = JS(paste0("function() {
+                              
+          if (typeof this.point.low !== 'undefined' && typeof this.point.high !== 'undefined') {
 
+            return '<b> Intervalo </b><br/>' +
+                   '", janela_tempo, ": <b>' + this.x + '</b><br/>' +
+                   'IC%: <b>' + Highcharts.numberFormat(this.point.low, 3) + 
+                   ' - ' + Highcharts.numberFormat(this.point.high, 3) + '</b>';
+          
+          } else {
+          
+            return '<b>' + this.series.name + '</b><br/>' +
+                   '", janela_tempo, ": <b>' + this.x + '</b><br/>' +
+                   'Sobrevivência: <b>' + Highcharts.numberFormat(this.y, 3) + '</b>';
+          
+          }
+        }")),
+        shared = FALSE,
+        crosshairs = TRUE
+      ) |>
+      hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal") |>
+      hc_colors(colors = viridis::viridis(length(levels(dados$variavel)))) |>
+      hc_plotOptions(series = list(marker = list(radius = 0)))
+  })
+  
+}
