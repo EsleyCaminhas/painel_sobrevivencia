@@ -37,7 +37,7 @@ ui <- dashboardPage(
       #Secao com as informacoes
       tabItem(tabName = "Info",
             
-              h2("Painel de Análise de Sobrevivência Oncológica"),
+              h2("Painel de Análise de Sobrevivência Oncológica (ASO)"),
               
               p(
                 "Seja bem vinda(o)!"
