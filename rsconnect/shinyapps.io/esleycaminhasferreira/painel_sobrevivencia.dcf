@@ -1,0 +1,12 @@
+name: painel_sobrevivencia
+title: painel_sobrevivencia
+username: esleycaminhasferreira
+account: esleycaminhasferreira
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15034185
+bundleId: 10567246
+url: https://esleycaminhasferreira.shinyapps.io/painel_sobrevivencia/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
