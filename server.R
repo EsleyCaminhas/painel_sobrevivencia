@@ -1,7 +1,8 @@
+## server.R
 
 # Dica: É uma boa prática usar caminhos relativos para que o projeto funcione em qualquer computador.
 # O caminho original "data/dados_cancer_filtrado.fst" é mais portável.
-dados_cancer <- read_fst("C:/GitHub/painel_sobrevivencia/data/dados_cancer_filtrado.fst",
+dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
                          as.data.table = TRUE) |>
   filter(TEMPO_OBS_DIAG_MESES > 0)
 
@@ -244,12 +245,25 @@ server <- function(input, output) {
     for(cat in categorias) {
       dados_cat <- dados |> filter(Grupo == cat)
       
-      estimativa <- muhaz(
-        times = as.numeric(dados_cat$tempo),
-        delta = dados_cat$DESFECHO,
-        min.time = min(dados_cat$tempo),
-        max.time = max(dados_cat$tempo)
-      )
+      # >>>>> INÍCIO DA CORREÇÃO <<<<<
+      # O bloco tryCatch impede que o app feche se a função muhaz() falhar.
+      estimativa <- tryCatch({
+        muhaz(
+          times = as.numeric(dados_cat$tempo),
+          delta = dados_cat$DESFECHO,
+          min.time = min(dados_cat$tempo),
+          max.time = max(dados_cat$tempo)
+        )
+      }, error = function(e) {
+        # Se ocorrer um erro, retorna NULL para que possamos ignorar este grupo.
+        NULL
+      })
+      
+      # Pula para a próxima iteração do loop se a estimativa falhou
+      if (is.null(estimativa)) {
+        next
+      }
+      # >>>>> FIM DA CORREÇÃO <<<<<
       
       lista_risco[[cat]] <- data.frame(
         tempo = estimativa$est.grid,
@@ -257,6 +271,11 @@ server <- function(input, output) {
         categoria = cat
       )
     }
+    
+    # Se nenhuma estimativa funcionou, mostra um gráfico vazio
+    validate(
+      need(length(lista_risco) > 0, "Não foi possível estimar a função de risco para a escala de tempo selecionada.")
+    )
     
     df_plot <- bind_rows(lista_risco)
     
@@ -293,50 +312,45 @@ server <- function(input, output) {
   
   # Filtra os dados de forma reativa para o modelo de Cox
   dados_filtrados_cox <- reactive({
-    
-    # Exige que os inputs existam antes de prosseguir
     req(input$grupo_cid_4, input$cox_variables)
     
     dados_cancer |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_4) |>
       select(
-        # Seleciona dinamicamente a coluna de tempo
         tempo = paste0("TEMPO_OBS_", input$Tempo_int3, "_", input$len_tempo3),
-        # Seleciona a coluna de desfecho/evento
         DESFECHO,
-        # Seleciona todas as covariáveis escolhidas pelo usuário
         all_of(input$cox_variables)
       ) |>
       mutate(tempo = as.numeric(tempo)) |> 
-      # Remove linhas com dados faltantes nas variáveis selecionadas (essencial para o modelo)
       na.omit() 
   })
   
-  
-  # Renderiza a tabela com o sumário do modelo de Cox
-  output$cox_summary_table <- renderDT({
+  # Reactive para ajustar o modelo de Cox (para ser reutilizado)
+  cox_model_fit <- reactive({
+    req(input$cox_variables)
     
-    # Exige que os inputs existam
-    req(input$grupo_cid_4, input$cox_variables)
-    
-    # Pega os dados já filtrados e limpos
     dados <- dados_filtrados_cox()
     
-    # Garante que há dados suficientes para rodar o modelo
     validate(
-      need(nrow(dados) > 0, "Não há dados suficientes para as seleções de filtros aplicadas.")
+      need(nrow(dados) > 0, "") 
     )
     
-    # Constrói a fórmula do modelo dinamicamente
-    # Ex: Surv(tempo, DESFECHO) ~ FAIXAETAR + SEXO
     formula_str <- paste("Surv(tempo, DESFECHO) ~", paste(input$cox_variables, collapse = " + "))
     cox_formula <- as.formula(formula_str)
     
-    # Ajusta o modelo de regressão de Cox
-    cox_model <- coxph(cox_formula, data = dados)
+    coxph(cox_formula, data = dados)
+  })
+  
+  
+  # Tabela de resultados agora usa o modelo do reactive `cox_model_fit`
+  output$cox_summary_table <- renderDT({
     
-    # Formata a saída do modelo usando a função tidy() do pacote 'broom'
-    # exponentiate = TRUE converte os coeficientes em Hazard Ratios (HR)
+    validate(
+      need(nrow(dados_filtrados_cox()) > 0, "Não há dados suficientes para as seleções de filtros aplicadas.")
+    )
+    
+    cox_model <- cox_model_fit()
+    
     summary_df <- broom::tidy(cox_model, exponentiate = TRUE, conf.int = TRUE) |> 
       select(
         Variável = term,
@@ -346,22 +360,89 @@ server <- function(input, output) {
         `Valor-p` = p.value
       )
     
-    # Cria a tabela interativa
     datatable(
       summary_df,
-      options = list(pageLength = 10,
-                     lengthChange = FALSE,
-                     searching = FALSE,
-                     info = FALSE,
-                     language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json')
-      ),
+      options = list(pageLength = 10, lengthChange = FALSE, searching = FALSE, info = FALSE,
+                     language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json')),
       rownames = FALSE
     ) |> 
-      # Formata as colunas numéricas para melhor visualização
       formatRound(columns = c('Hazard Ratio (HR)', 'IC Inferior', 'IC Superior'), digits = 3) |> 
-      formatRound(columns = c('Valor-p'), digits = 4)
+      formatRound(columns = c('Valor-p'), digits = 2)
     
   })
   
-  # A CHAVE ABAIXO É O FIM DA FUNÇÃO 'server'
+  # Lógica para os resíduos de Schoenfeld
+  
+  # 1. Gera o seletor de variáveis dinamicamente
+  output$schoenfeld_variable_selector_ui <- renderUI({
+    req(input$cox_variables)
+    
+    tagList(
+      h3("Teste de Pressupostos (Resíduos de Schoenfeld)"),
+      p("Este teste verifica a premissa de riscos proporcionais do modelo de Cox. 
+        Se a linha suavizada no gráfico for aproximadamente horizontal e o p-valor for maior que 0.05, 
+        a premissa é considerada atendida para aquela variável."),
+      
+      pickerInput(
+        inputId = "schoenfeld_vars",
+        label = "Selecione as variáveis para visualizar os resíduos:",
+        choices = input$cox_variables,
+        selected = input$cox_variables,
+        multiple = TRUE,
+        options = list(`actions-box` = TRUE, `deselect-all-text` = "Nenhuma", `select-all-text` = "Todas")
+      )
+    )
+  })
+  
+  # Trocado eventReactive por reactive para reagir a TODAS as alterações, incluindo tempo.
+  terms_to_plot_reactive <- reactive({
+    req(cox_model_fit(), input$schoenfeld_vars)
+    
+    schoenfeld_test <- cox.zph(cox_model_fit())
+    all_terms <- rownames(schoenfeld_test$table)
+    
+    terms_to_plot <- unlist(sapply(input$schoenfeld_vars, function(var) {
+      grep(paste0("^", var), all_terms, value = TRUE)
+    }))
+    
+    list(schoenfeld_test = schoenfeld_test, terms = terms_to_plot)
+  })
+  
+  # 2. Gera os placeholders para os gráficos
+  output$schoenfeld_plots_ui <- renderUI({
+    plot_data <- terms_to_plot_reactive()
+    req(plot_data$terms)
+    
+    map(plot_data$terms, ~ {
+      plot_id <- gsub("[^[:alnum:]]", "", .x)
+      plotOutput(outputId = paste0("schoenfeld_plot_", plot_id), height = "400px")
+    })
+  })
+  
+  # 3. Renderiza cada gráfico individualmente
+  observe({
+    plot_data <- terms_to_plot_reactive()
+    req(plot_data$terms)
+    
+    schoenfeld_test <- plot_data$schoenfeld_test
+    
+    for (term in plot_data$terms) {
+      local({
+        my_term <- term
+        plot_id <- gsub("[^[:alnum:]]", "", my_term)
+        
+        output[[paste0("schoenfeld_plot_", plot_id)]] <- renderPlot({
+          plot_list <- ggcoxzph(schoenfeld_test, var = my_term, point.alpha = 0.5)
+          
+          plot_list[[1]] + 
+            labs(
+              title = paste("Resíduos de Schoenfeld para:", my_term),
+              subtitle = paste("Teste de Proporcionalidade, p-valor:", round(schoenfeld_test$table[my_term, "p"], 4))
+            ) + 
+            theme_bw()
+        })
+      })
+    }
+  })
+  
 }

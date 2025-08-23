@@ -23,7 +23,6 @@ ui <- dashboardPage(
                tabName = "KM"),
       menuItem("Função de Risco",
                tabName = "Hazard"),
-      # Item do menu para o Modelo de Cox (estava correto)
       menuItem("Modelo de Cox",
                tabName = "COX") 
     )
@@ -34,7 +33,6 @@ ui <- dashboardPage(
     
     tags$style("justified-text { text-align: justify; }"),
     
-    # Todos os tabItem devem estar dentro desta função
     tabItems(
       
       #Secao com as informacoes
@@ -97,15 +95,7 @@ ui <- dashboardPage(
                   pickerInput(
                     inputId = "grupo_cid_1",
                     label = "Selecione o grupo (topografia):", 
-                    choices = c("C50 Mama" = "C50 Mama",
-                                "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
-                                "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
-                                "C64-C68 Trato urinário" = "C64-C68 Trato urinário",
-                                "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC",
-                                "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas",
-                                "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas",
-                                "C77 Linfonodos" = "C77 Linfonodos",
-                                "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
+                    choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
                     selected = c("C50 Mama", "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
@@ -236,9 +226,9 @@ ui <- dashboardPage(
                   withSpinner(highchartOutput("hazard_plot", height = "600px"), type = 6)
                 )
               )
-      ), # A vírgula aqui separa este tabItem do próximo
+      ), 
       
-      # >>>>>>> INÍCIO DO NOVO BLOCO CORRIGIDO <<<<<<<<<
+      # Aba do Modelo de Cox
       tabItem(tabName = "COX",
               sidebarLayout(
                 sidebarPanel(
@@ -248,7 +238,7 @@ ui <- dashboardPage(
                   width = 3,
                   
                   pickerInput(
-                    inputId = "grupo_cid_4", # ID ÚNICO
+                    inputId = "grupo_cid_4",
                     label = "Selecione o grupo (topografia):",
                     choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
                     selected = c("C50 Mama"),
@@ -257,13 +247,13 @@ ui <- dashboardPage(
                   ),
                   
                   pickerInput(
-                    inputId = "cox_variables", # ID ÚNICO
+                    inputId = "cox_variables",
                     label = "Selecione as variáveis (covariáveis):",
                     choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
                     selected = c("FAIXAETAR", "SEXO"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE)
-                  ), # Vírgula extra removida daqui
+                  ),
                   
                   br(),
                   
@@ -271,14 +261,14 @@ ui <- dashboardPage(
                   hr(),
                   
                   selectInput(
-                    inputId = "Tempo_int3", # ID ÚNICO
+                    inputId = "Tempo_int3",
                     label = "Selecione o inicio do acompanhamento:",
                     choices = c("Diagnóstico" = "DIAG", "Consulta" = "CONSULT"),
                     selected = "DIAG"
                   ),
                   
                   selectInput(
-                    inputId = "len_tempo3", # ID ÚNICO
+                    inputId = "len_tempo3",
                     label = "Selecione a unidade de tempo:",
                     choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
                     selected = "TRI"
@@ -286,21 +276,31 @@ ui <- dashboardPage(
                 ),
                 mainPanel(
                   
-                  uiOutput("alert_box4"), # OUTPUT ÚNICO
+                  uiOutput("alert_box4"),
                   
                   h3("Resultados do Modelo de Regressão de Cox"),
                   p("A tabela abaixo mostra os resultados do modelo. A coluna 'Hazard Ratio (HR)' indica o efeito de cada variável no risco. 
                     Um HR > 1 sugere um aumento no risco, enquanto um HR < 1 sugere uma diminuição (efeito protetor)."),
                   
                   withSpinner(
-                    DTOutput("cox_summary_table"), # OUTPUT ÚNICO para a tabela
+                    DTOutput("cox_summary_table"),
+                    type = 6
+                  ),
+                  
+                  hr(), # Adiciona uma linha divisória
+                  
+                  # Placeholder para o seletor de variáveis dos resíduos
+                  uiOutput("schoenfeld_variable_selector_ui"),
+                  
+                  # Placeholder para os gráficos de resíduos
+                  withSpinner(
+                    uiOutput("schoenfeld_plots_ui"),
                     type = 6
                   )
                 )
               )
-      ) # Fim do novo tabItem
-      # >>>>>>> FIM DO NOVO BLOCO CORRIGIDO <<<<<<<<<
+      ) 
       
-    ) # Fim do tabItems()
-  ) # Fim do dashboardBody()
-) # Fim da dashboardPage()
+    ) 
+  ) 
+)
