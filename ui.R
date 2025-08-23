@@ -1,4 +1,3 @@
-
 ## ui.R
 
 ui <- dashboardPage(
@@ -23,7 +22,10 @@ ui <- dashboardPage(
       menuItem("Curvas de Kaplan-Meier",
                tabName = "KM"),
       menuItem("Função de Risco",
-               tabName = "Hazard")
+               tabName = "Hazard"),
+      # Item do menu para o Modelo de Cox (estava correto)
+      menuItem("Modelo de Cox",
+               tabName = "COX") 
     )
   ),
   
@@ -32,28 +34,25 @@ ui <- dashboardPage(
     
     tags$style("justified-text { text-align: justify; }"),
     
+    # Todos os tabItem devem estar dentro desta função
     tabItems(
       
       #Secao com as informacoes
       tabItem(tabName = "Info",
-            
+              
               h2("Painel de Análise de Sobrevivência Oncológica (ASO)"),
               
-              p(
-                "Seja bem vinda(o)!"
-              ),
+              p("Seja bem vinda(o)!"),
               
               p(
                 class = "justified-text",
                 "Este painel foi desenvolvido como parte do seminário apresentado à disciplina de Análise de Sobrevivência, ministrada ao curso de Estatística da Universidade Federal do Espírito Santo.
-                Seu objetivo é permitir a exploração e a análise visual de dados de sobrevivência de pacientes oncológicos, provenientes da Fundação Oncocentro de São Paulo (FOSP), instituição de referência vinculada à Secretaria de Estado de São Paulo.
-                "
+                Seu objetivo é permitir a exploração e a análise visual de dados de sobrevivência de pacientes oncológicos, provenientes da Fundação Oncocentro de São Paulo (FOSP), instituição de referência vinculada à Secretaria de Estado de São Paulo."
               ),
               
               p(
                 class = "justified-text",
-                "A FOSP é uma das principais fontes de dados oncológicos no Brasil, mantendo registros hospitalares de grande relevância para a pesquisa e o desenvolvimento de políticas públicas de combate ao câncer no país.
-                "
+                "A FOSP é uma das principais fontes de dados oncológicos no Brasil, mantendo registros hospitalares de grande relevância para a pesquisa e o desenvolvimento de políticas públicas de combate ao câncer no país."
               ),
               
               br(),
@@ -92,9 +91,7 @@ ui <- dashboardPage(
                 sidebarPanel(
                   
                   h4(strong("Filtros para grupo e variável")),
-                  
                   hr(),
-                  
                   width = 3,
                   
                   pickerInput(
@@ -109,232 +106,201 @@ ui <- dashboardPage(
                                 "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas",
                                 "C77 Linfonodos" = "C77 Linfonodos",
                                 "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C50 Mama",
-                                 "C51-C58 Órgãos genitais femininos",
-                                 "C60-C63 Órgãos genitais masculinos",
-                                 "C64-C68 Trato urinário",
-                                 "C69-C72 Olho, cérebro e outras partes do SNC",
-                                 "C73-C75 Tiróide e outras glândulas",
-                                 "C76 Out. localizações e localizações mal definidas",
-                                 "C77 Linfonodos",
-                                 "C80 Localização primária desconhecida"),
+                    selected = c("C50 Mama", "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"),
                     multiple = TRUE,
-                    options = list(
-                      `actions-box` = TRUE,       
-                      `selected-text-format` = "count > 8",
-                      `count-selected-text` = "C50-C80",
-                      `none-selected-text` = "Nenhum item selecionado",
-                      `deselect-all-text` = "Desselecionar todas",
-                      `select-all-text` = "Selecionar todas"
-                    )),
+                    options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
+                  ),
                   
                   selectInput(
                     inputId = "variavel_1",
                     label = "Selecione a variável:",
-                    choices = c("Faixa etária" = "FAIXAETAR",
-                                "Sexo" = "SEXO",
-                                "Estádio clínico" = "GRUPO_EC",
-                                "Tratamento" = "TRATAMENTO",
-                                "Desfecho Tratamento" = "ULTINFO"
-                                ),
+                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Estádio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO", "Desfecho Tratamento" = "ULTINFO"),
                     selected = "FAIXAETAR"
                   )
                 ),
                 
                 mainPanel(
-                  
                   uiOutput("alert_box1"),
-                  
-                  withSpinner(
-                    highchartOutput("grafico_barras"),
-                    type = 6
-                  )
+                  withSpinner(highchartOutput("grafico_barras"), type = 6)
                 )
               )
       ),
       
-      #Secao com os graficos
+      #Secao com as curvas de KM
       tabItem(tabName = "KM",
-        sidebarLayout(
-          sidebarPanel(
-            
-            h4(strong("Filtros para grupo e variável")),
-            
-            hr(),
-            
-            width = 3,
-
-            pickerInput(
-              inputId = "grupo_cid_2",
-              label = "Selecione o grupo (topografia):",
-              choices = c("C50 Mama" = "C50 Mama",
-                          "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
-                          "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
-                          "C64-C68 Trato urinário" = "C64-C68 Trato urinário",
-                          "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC",
-                          "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas",
-                          "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas",
-                          "C77 Linfonodos" = "C77 Linfonodos",
-                          "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-              selected = c("C50 Mama",
-                           "C51-C58 Órgãos genitais femininos",
-                           "C60-C63 Órgãos genitais masculinos",
-                           "C64-C68 Trato urinário",
-                           "C69-C72 Olho, cérebro e outras partes do SNC",
-                           "C73-C75 Tiróide e outras glândulas",
-                           "C76 Out. localizações e localizações mal definidas",
-                           "C77 Linfonodos",
-                           "C80 Localização primária desconhecida"),
-              multiple = TRUE,
-              options = list(
-                `actions-box` = TRUE,
-                `selected-text-format` = "count > 8",
-                `count-selected-text` = "C50-C80",
-                `none-selected-text` = "Nenhum item selecionado",
-                `deselect-all-text` = "Desselecionar todas",
-                `select-all-text` = "Selecionar todas"
-              )),
-
-            selectInput(
-              inputId = "km_variable",
-              label = "Selecione a variável:",
-              choices = c(                          
-                          "Faixa etária" = "FAIXAETAR",
-                          "Sexo" = "SEXO",
-                          "Idade" = "IDADE",
-                          "Estágio clínico" = "GRUPO_EC",
-                          "Tratamento" = "TRATAMENTO"),
-              selected = "FAIXAETAR"
-              ),
-            
-            br(),
-            
-            h4(strong("Filtros relacionados ao tempo de acompanhamento")),
-            
-            hr(),
-            
-            selectInput(
-              inputId = "Tempo_int",
-              label = "Selecione o inicio do acompanhamento:",
-              choices = c("Diagnóstico" = "DIAG",
-                          "Consulta" = "CONSULT"),
-              selected = "DIAG"
-              ),
-          
-            selectInput(
-              inputId = "len_tempo",
-              label = "Selecione a unidade de tempo:",
-              choices = c("Meses (30 dias)" = "MESES",
-                          "Trimestres (90 dias)" = "TRI",
-                          "Anos (365 dias)" = "ANO"),
-              selected = "TRI"
-              ),
-            
-            hr(),
-            
-            shinyWidgets::materialSwitch(
-              inputId = "show_ci",
-              label = "Mostrar o intervalo de confiança?", 
-              value = FALSE,
-              status = "info"
-            )
-            ),
-          mainPanel(
-            
-            uiOutput("alert_box2"),
-            
-            withSpinner(
-              highchartOutput("km_plot", height = "600px"),
-              type = 6
-            ),
-            withSpinner(
-              uiOutput("tabelas_por_grupo"),
-              type = 6
-            )
-          )
-        )
-      ),
-      ##########################################################################
-      
-      tabItem(tabName = "Hazard",
               sidebarLayout(
                 sidebarPanel(
                   
                   h4(strong("Filtros para grupo e variável")),
-                  
                   hr(),
-                  
                   width = 3,
                   
                   pickerInput(
-                    inputId = "grupo_cid_3",
+                    inputId = "grupo_cid_2",
                     label = "Selecione o grupo (topografia):",
-                    choices = c("C50 Mama" = "C50 Mama",
-                                "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos",
-                                "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos",
-                                "C64-C68 Trato urinário" = "C64-C68 Trato urinário",
-                                "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC",
-                                "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas",
-                                "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas",
-                                "C77 Linfonodos" = "C77 Linfonodos",
-                                "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C69-C72 Olho, cérebro e outras partes do SNC"),
+                    choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
+                    selected = c("C50 Mama", "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"),
                     multiple = TRUE,
-                    options = list(
-                      `actions-box` = TRUE,
-                      `selected-text-format` = "count > 8",
-                      `count-selected-text` = "C50-C80",
-                      `none-selected-text` = "Nenhum item selecionado",
-                      `deselect-all-text` = "Desselecionar todas",
-                      `select-all-text` = "Selecionar todas"
-                    )),
+                    options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
+                  ),
                   
                   selectInput(
-                    inputId = "hazard_variable",
+                    inputId = "km_variable",
                     label = "Selecione a variável:",
-                    choices = c(
-                      "Sexo" = "SEXO",
-                      # "Idade" = "IDADE",
-                      "Faixa etária" = "FAIXAETAR",
-                      "Estágio clínico" = "GRUPO_EC",
-                      "Tratamento" = "TRATAMENTO"),
+                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
                     selected = "FAIXAETAR"
                   ),
                   
                   br(),
                   
                   h4(strong("Filtros relacionados ao tempo de acompanhamento")),
+                  hr(),
                   
+                  selectInput(
+                    inputId = "Tempo_int",
+                    label = "Selecione o inicio do acompanhamento:",
+                    choices = c("Diagnóstico" = "DIAG", "Consulta" = "CONSULT"),
+                    selected = "DIAG"
+                  ),
+                  
+                  selectInput(
+                    inputId = "len_tempo",
+                    label = "Selecione a unidade de tempo:",
+                    choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
+                    selected = "TRI"
+                  ),
+                  
+                  hr(),
+                  
+                  shinyWidgets::materialSwitch(
+                    inputId = "show_ci",
+                    label = "Mostrar o intervalo de confiança?", 
+                    value = FALSE,
+                    status = "info"
+                  )
+                ),
+                mainPanel(
+                  uiOutput("alert_box2"),
+                  withSpinner(highchartOutput("km_plot", height = "600px"), type = 6),
+                  withSpinner(uiOutput("tabelas_por_grupo"), type = 6)
+                )
+              )
+      ),
+      
+      #Secao da Função de Risco
+      tabItem(tabName = "Hazard",
+              sidebarLayout(
+                sidebarPanel(
+                  
+                  h4(strong("Filtros para grupo e variável")),
+                  hr(),
+                  width = 3,
+                  
+                  pickerInput(
+                    inputId = "grupo_cid_3",
+                    label = "Selecione o grupo (topografia):",
+                    choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
+                    selected = c("C69-C72 Olho, cérebro e outras partes do SNC"),
+                    multiple = TRUE,
+                    options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
+                  ),
+                  
+                  selectInput(
+                    inputId = "hazard_variable",
+                    label = "Selecione a variável:",
+                    choices = c("Sexo" = "SEXO", "Faixa etária" = "FAIXAETAR", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    selected = "FAIXAETAR"
+                  ),
+                  
+                  br(),
+                  
+                  h4(strong("Filtros relacionados ao tempo de acompanhamento")),
                   hr(),
                   
                   selectInput(
                     inputId = "Tempo_int2",
                     label = "Selecione o inicio do acompanhamento:",
-                    choices = c("Diagnóstico" = "DIAG",
-                                "Consulta" = "CONSULT"),
+                    choices = c("Diagnóstico" = "DIAG", "Consulta" = "CONSULT"),
                     selected = "DIAG"
                   ),
                   
                   selectInput(
                     inputId = "len_tempo2",
                     label = "Selecione a unidade de tempo:",
-                    choices = c("Meses (30 dias)" = "MESES",
-                                "Trimestres (90 dias)" = "TRI",
-                                "Anos (365 dias)" = "ANO"),
+                    choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
+                    selected = "TRI"
+                  )
+                ),
+                mainPanel(
+                  uiOutput("alert_box3"),
+                  withSpinner(highchartOutput("hazard_plot", height = "600px"), type = 6)
+                )
+              )
+      ), # A vírgula aqui separa este tabItem do próximo
+      
+      # >>>>>>> INÍCIO DO NOVO BLOCO CORRIGIDO <<<<<<<<<
+      tabItem(tabName = "COX",
+              sidebarLayout(
+                sidebarPanel(
+                  
+                  h4(strong("Filtros para o modelo")),
+                  hr(),
+                  width = 3,
+                  
+                  pickerInput(
+                    inputId = "grupo_cid_4", # ID ÚNICO
+                    label = "Selecione o grupo (topografia):",
+                    choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
+                    selected = c("C50 Mama"),
+                    multiple = TRUE,
+                    options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
+                  ),
+                  
+                  pickerInput(
+                    inputId = "cox_variables", # ID ÚNICO
+                    label = "Selecione as variáveis (covariáveis):",
+                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    selected = c("FAIXAETAR", "SEXO"),
+                    multiple = TRUE,
+                    options = list(`actions-box` = TRUE)
+                  ), # Vírgula extra removida daqui
+                  
+                  br(),
+                  
+                  h4(strong("Filtros de tempo")),
+                  hr(),
+                  
+                  selectInput(
+                    inputId = "Tempo_int3", # ID ÚNICO
+                    label = "Selecione o inicio do acompanhamento:",
+                    choices = c("Diagnóstico" = "DIAG", "Consulta" = "CONSULT"),
+                    selected = "DIAG"
+                  ),
+                  
+                  selectInput(
+                    inputId = "len_tempo3", # ID ÚNICO
+                    label = "Selecione a unidade de tempo:",
+                    choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
                     selected = "TRI"
                   )
                 ),
                 mainPanel(
                   
-                  uiOutput("alert_box3"),
+                  uiOutput("alert_box4"), # OUTPUT ÚNICO
+                  
+                  h3("Resultados do Modelo de Regressão de Cox"),
+                  p("A tabela abaixo mostra os resultados do modelo. A coluna 'Hazard Ratio (HR)' indica o efeito de cada variável no risco. 
+                    Um HR > 1 sugere um aumento no risco, enquanto um HR < 1 sugere uma diminuição (efeito protetor)."),
                   
                   withSpinner(
-                    highchartOutput("hazard_plot", height = "600px"),
+                    DTOutput("cox_summary_table"), # OUTPUT ÚNICO para a tabela
                     type = 6
                   )
                 )
               )
-      )
-    )
-  )
-)
+      ) # Fim do novo tabItem
+      # >>>>>>> FIM DO NOVO BLOCO CORRIGIDO <<<<<<<<<
+      
+    ) # Fim do tabItems()
+  ) # Fim do dashboardBody()
+) # Fim da dashboardPage()

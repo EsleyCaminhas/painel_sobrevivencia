@@ -1,8 +1,9 @@
-## server.R
 
-dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
+# Dica: É uma boa prática usar caminhos relativos para que o projeto funcione em qualquer computador.
+# O caminho original "data/dados_cancer_filtrado.fst" é mais portável.
+dados_cancer <- read_fst("C:/GitHub/painel_sobrevivencia/data/dados_cancer_filtrado.fst",
                          as.data.table = TRUE) |>
-                filter(TEMPO_OBS_DIAG_MESES > 0)
+  filter(TEMPO_OBS_DIAG_MESES > 0)
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
@@ -27,7 +28,7 @@ server <- function(input, output) {
           "Selecione, pelo menos, uma variável para visualizar o gráfico.")
     }
   })
-
+  
   
   output$grafico_barras <- renderHighchart({
     
@@ -88,9 +89,9 @@ server <- function(input, output) {
       valor_cut <- (cutpoint$cutpoint)$cutpoint
       
       dados$Grupo <- factor(surv_categorize(cutpoint)$Grupo,
-                             levels = c("low", "high"),
-                             labels = c(paste0("Idade maior ou igual a ", round(valor_cut)),
-                                        paste0("Idade menor que ", round(valor_cut))))
+                            levels = c("low", "high"),
+                            labels = c(paste0("Idade maior ou igual a ", round(valor_cut)),
+                                       paste0("Idade menor que ", round(valor_cut))))
       
     } 
     
@@ -153,9 +154,9 @@ server <- function(input, output) {
     req(input$grupo_cid_2)
     
     dados <- dados_filtrados_km() |> arrange(Grupo)
-
+    
     fit <- survfit(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
-
+    
     grupos <- unique(dados$Grupo)
     
     # Cria uma lista de elementos UI para cada grupo
@@ -185,8 +186,6 @@ server <- function(input, output) {
                            language = list(    
                              url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
                            ),
-                           # dom = 't',
-                           # paging = FALSE, 
                            ordering = FALSE,
                            searching = FALSE,
                            info = FALSE),
@@ -194,7 +193,7 @@ server <- function(input, output) {
           ) |>
             formatRound(columns = c('Sobrevivência', 'Erro_Padrão', 'IC_Inferior', 'IC_Superior'), 
                         digits = 4)
-        
+          
         })
       )
     })
@@ -266,7 +265,7 @@ server <- function(input, output) {
       type = "line",
       hcaes(x = tempo, y = risco, group = categoria),
       marker = list(enabled = FALSE) 
-      ) |>
+    ) |>
       hc_title(text = "Função de Risco") |>
       hc_xAxis(title = list(text = paste0(janela_tempo2()))) |>
       hc_yAxis(title = list(text = "Taxa de Risco Instantânea")) |>
@@ -279,4 +278,90 @@ server <- function(input, output) {
   
   ##############################################################################
   
+  #### aba Modelo de Cox
+  
+  ##############################################################################
+  
+  # Alerta para o usuário selecionar as variáveis necessárias
+  output$alert_box4 <- renderUI({
+    if(length(input$grupo_cid_4) < 1 || length(input$cox_variables) < 1) {
+      div(class = "alert alert-warning",
+          icon("exclamation-triangle"),
+          "Selecione, pelo menos, um grupo de topografia e uma variável para ajustar o modelo.")
+    }
+  })
+  
+  # Filtra os dados de forma reativa para o modelo de Cox
+  dados_filtrados_cox <- reactive({
+    
+    # Exige que os inputs existam antes de prosseguir
+    req(input$grupo_cid_4, input$cox_variables)
+    
+    dados_cancer |>
+      filter(TOPOGRUP_GRUPO %in% input$grupo_cid_4) |>
+      select(
+        # Seleciona dinamicamente a coluna de tempo
+        tempo = paste0("TEMPO_OBS_", input$Tempo_int3, "_", input$len_tempo3),
+        # Seleciona a coluna de desfecho/evento
+        DESFECHO,
+        # Seleciona todas as covariáveis escolhidas pelo usuário
+        all_of(input$cox_variables)
+      ) |>
+      mutate(tempo = as.numeric(tempo)) |> 
+      # Remove linhas com dados faltantes nas variáveis selecionadas (essencial para o modelo)
+      na.omit() 
+  })
+  
+  
+  # Renderiza a tabela com o sumário do modelo de Cox
+  output$cox_summary_table <- renderDT({
+    
+    # Exige que os inputs existam
+    req(input$grupo_cid_4, input$cox_variables)
+    
+    # Pega os dados já filtrados e limpos
+    dados <- dados_filtrados_cox()
+    
+    # Garante que há dados suficientes para rodar o modelo
+    validate(
+      need(nrow(dados) > 0, "Não há dados suficientes para as seleções de filtros aplicadas.")
+    )
+    
+    # Constrói a fórmula do modelo dinamicamente
+    # Ex: Surv(tempo, DESFECHO) ~ FAIXAETAR + SEXO
+    formula_str <- paste("Surv(tempo, DESFECHO) ~", paste(input$cox_variables, collapse = " + "))
+    cox_formula <- as.formula(formula_str)
+    
+    # Ajusta o modelo de regressão de Cox
+    cox_model <- coxph(cox_formula, data = dados)
+    
+    # Formata a saída do modelo usando a função tidy() do pacote 'broom'
+    # exponentiate = TRUE converte os coeficientes em Hazard Ratios (HR)
+    summary_df <- broom::tidy(cox_model, exponentiate = TRUE, conf.int = TRUE) |> 
+      select(
+        Variável = term,
+        `Hazard Ratio (HR)` = estimate,
+        `IC Inferior` = conf.low,
+        `IC Superior` = conf.high,
+        `Valor-p` = p.value
+      )
+    
+    # Cria a tabela interativa
+    datatable(
+      summary_df,
+      options = list(pageLength = 10,
+                     lengthChange = FALSE,
+                     searching = FALSE,
+                     info = FALSE,
+                     language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json')
+      ),
+      rownames = FALSE
+    ) |> 
+      # Formata as colunas numéricas para melhor visualização
+      formatRound(columns = c('Hazard Ratio (HR)', 'IC Inferior', 'IC Superior'), digits = 3) |> 
+      formatRound(columns = c('Valor-p'), digits = 4)
+    
+  })
+  
+  # A CHAVE ABAIXO É O FIM DA FUNÇÃO 'server'
 }
