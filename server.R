@@ -445,4 +445,11 @@ server <- function(input, output) {
     }
   })
   
+  ## Geração de PDF de Documentação ----
+  observeEvent(input$generate, {
+    output$pdfview <- renderUI({
+      tags$iframe(style = "height:600px; width:100%", src = "documentacao.pdf")
+    })
+  })
+  
 }

@@ -6,7 +6,7 @@ ui <- dashboardPage(
   
   #Cabecalho
   dashboardHeader(
-    title = "Painel ASO",
+    title = strong("Painel ASO"),
     tags$li(class = "dropdown",
             tags$style(".justified-text { text-align: justify; }")
     )
@@ -38,7 +38,9 @@ ui <- dashboardPage(
       #Secao com as informacoes
       tabItem(tabName = "Info",
               
-              h2("Painel de Análise de Sobrevivência Oncológica (ASO)"),
+              h2(strong("Painel de Análise de Sobrevivência Oncológica (ASO)")),
+              
+              hr(style = "border: 1px solid #ccc; margin: 20px 0;"),
               
               p("Seja bem vinda(o)!"),
               
@@ -53,9 +55,7 @@ ui <- dashboardPage(
                 "A FOSP é uma das principais fontes de dados oncológicos no Brasil, mantendo registros hospitalares de grande relevância para a pesquisa e o desenvolvimento de políticas públicas de combate ao câncer no país."
               ),
               
-              br(),
-              
-              h3("Sobre os Dados"),
+              h3(strong("Sobre os Dados")),
               
               p(
                 class = "justified-text",
@@ -76,11 +76,34 @@ ui <- dashboardPage(
               
               br(),
               
-              p(
-                class = "justified-text",
-                "Para mais informações sobre a FOSP visite o site:",
-                a("https://fosp.saude.sp.gov.br/", href="https://fosp.saude.sp.gov.br/"),
+              div(
+                style = "display: flex; align-items: center; gap: 10px;",
+                
+                tags$img(src = "images/fosp.png", height = "40px", alt = "Logo FOSP"),
+                
+                p(
+                  class = "justified-text",
+                  style = "margin: 0;",  # Remove margem padrão do parágrafo
+                  "Para mais informações sobre a FOSP visite o site:",
+                  a("https://fosp.saude.sp.gov.br/", href = "https://fosp.saude.sp.gov.br/")
+                )
+              ),
+              
+              h3(strong("Documentação")),
+              
+              actionButton("generate", "Gerar pdf da documentação"),
+              uiOutput("pdfview"),
+              
+              hr(style = "border: 1px solid #ccc; margin: 20px 0;"),
+              
+              div(
+                style = "display: flex; justify-content: center; align-items: center; gap: 30px; padding: 0px;",
+                
+                tags$img(src = "images/dest.png", height = "100px", alt = "Logo DEST", style = "object-fit: contain;"),
+                tags$img(src = "images/ufes.png", height = "100px", alt = "Logo UFES", style = "object-fit: contain;")
               )
+              
+              
       ),
       #Secao com os graficos
       tabItem(tabName = "Graphs",
