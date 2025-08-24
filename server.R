@@ -33,12 +33,23 @@ res_cutpoint <- surv_cutpoint(
   variables = "IDADE"
 )
 
-# 2. Adicionar a nova coluna estratificada à base de dados original.
+# 2. Extrair o valor numérico do ponto de corte.
+ponto_de_corte <- res_cutpoint$cutpoint$cutpoint
+
+# 3. Criar as etiquetas descritivas.
+label_menor <- paste0("Idade < ", ponto_de_corte)
+label_maior <- paste0("Idade >= ", ponto_de_corte)
+
+# 4. Adicionar a nova coluna e renomear os níveis do fator.
 dados_cancer <- dados_cancer |>
   mutate(
-    IDADE_ESTRATIFICADA = surv_categorize(res_cutpoint)$IDADE
+    # Cria a coluna com os níveis "low" e "high"
+    IDADE_ESTRATIFICADA = surv_categorize(res_cutpoint)$IDADE,
+    # Imediatamente renomeia os níveis para as etiquetas descritivas
+    IDADE_ESTRATIFICADA = recode_factor(IDADE_ESTRATIFICADA,
+                                        "low" = label_menor,
+                                        "high" = label_maior)
   )
-
 # ==============================================================================
 # ==== FIM DA MODIFICAÇÃO ====
 # ==============================================================================
