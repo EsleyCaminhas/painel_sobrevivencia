@@ -226,7 +226,9 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "hazard_variable",
                     label = "Selecione a variável:",
-                    choices = c("Sexo" = "SEXO", "Faixa etária" = "FAIXAETAR", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    # ================= INÍCIO DA CORREÇÃO =================
+                    choices = c("Sexo" = "SEXO", "Faixa etária" = "FAIXAETAR","Idade" = "IDADE_ESTRATIFICADA", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    # ================= FIM DA CORREÇÃO =================
                     selected = "FAIXAETAR"
                   ),
                   
@@ -277,7 +279,7 @@ ui <- dashboardPage(
                   pickerInput(
                     inputId = "cox_variables",
                     label = "Selecione as variáveis (covariáveis):",
-                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    choices = c("Faixa etária" = "FAIXAETAR","Idade" = "IDADE_ESTRATIFICADA", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
                     selected = c("FAIXAETAR", "SEXO"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE)

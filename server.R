@@ -1,10 +1,48 @@
-## server.R
+# Carregue todos os pacotes necessários no início
+library(shiny)
+library(shinyWidgets)
+library(fst)
+library(dplyr)
+library(data.table)
+library(highcharter)
+library(survival)
+library(survminer)
+library(DT)
+library(broom)
+library(purrr)
+library(muhaz)
+library(shinycssloaders)
+
 
 # Dica: É uma boa prática usar caminhos relativos para que o projeto funcione em qualquer computador.
 # O caminho original "data/dados_cancer_filtrado.fst" é mais portável.
 dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
                          as.data.table = TRUE) |>
   filter(TEMPO_OBS_DIAG_MESES > 0)
+
+
+# ==============================================================================
+# ==== INÍCIO DA MODIFICAÇÃO: ESTRATIFICAR E SALVAR A IDADE AQUI ====
+# ==============================================================================
+
+# 1. Encontrar o ponto de corte ótimo para a idade usando a base de dados COMPLETA.
+res_cutpoint <- surv_cutpoint(
+  data = dados_cancer,
+  time = "TEMPO_OBS_DIAG_MESES",
+  event = "DESFECHO",
+  variables = "IDADE"
+)
+
+# 2. Adicionar a nova coluna estratificada à base de dados original.
+dados_cancer <- dados_cancer |>
+  mutate(
+    IDADE_ESTRATIFICADA = surv_categorize(res_cutpoint)$IDADE
+  )
+
+# ==============================================================================
+# ==== FIM DA MODIFICAÇÃO ====
+# ==============================================================================
+
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
@@ -70,6 +108,10 @@ server <- function(input, output, session) {
   
   dados_filtrados_km <- reactive({
     
+    # O CÓDIGO AQUI FOI SIMPLIFICADO.
+    # A coluna `IDADE_ESTRATIFICADA` já existe e pode ser selecionada diretamente pelo usuário.
+    # O bloco "if" para calcular o cutpoint foi removido.
+    
     dados <- dados_cancer |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2) |>
       select(tempo = paste0("TEMPO_OBS_",input$Tempo_int,"_",input$len_tempo),
@@ -77,24 +119,6 @@ server <- function(input, output, session) {
              DESFECHO
       ) |>
       mutate(tempo = as.numeric(tempo))
-    
-    if (input$km_variable == "IDADE"){
-      
-      cutpoint <- surv_cutpoint(
-        data = dados,
-        time = "tempo",
-        event = "DESFECHO",
-        variables = "Grupo"
-      )
-      
-      valor_cut <- (cutpoint$cutpoint)$cutpoint
-      
-      dados$Grupo <- factor(surv_categorize(cutpoint)$Grupo,
-                            levels = c("low", "high"),
-                            labels = c(paste0("Idade maior ou igual a ", round(valor_cut)),
-                                       paste0("Idade menor que ", round(valor_cut))))
-      
-    } 
     
     dados
     
@@ -123,7 +147,7 @@ server <- function(input, output, session) {
                labels = list(formatter = JS("function() { return Highcharts.numberFormat(this.value, 3); }"))) |>
       hc_tooltip(
         formatter = JS(paste0("function() {
-                              
+          
           if (typeof this.point.low !== 'undefined' && typeof this.point.high !== 'undefined') {
 
             return '<b> Intervalo </b><br/>' +
@@ -222,7 +246,7 @@ server <- function(input, output, session) {
             options = list(
               pageLength = 10,
               lengthChange = FALSE,
-              language = list(    
+              language = list(   
                 url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
               ),
               ordering = FALSE,
@@ -410,7 +434,6 @@ server <- function(input, output, session) {
     
   })
   
-  # INÍCIO DO CÓDIGO ADICIONADO
   # Forest Plot do Modelo de Cox
   output$cox_forest_plot <- renderPlot({
     
@@ -423,7 +446,6 @@ server <- function(input, output, session) {
       data = dados_filtrados_cox()
     )
   })
-  # FIM DO CÓDIGO ADICIONADO
   
   # Lógica para os resíduos de Schoenfeld
   
@@ -509,31 +531,40 @@ server <- function(input, output, session) {
   # Atualizando a seleção para evitar bugs para CID's de sexo exclusivo 
   
   ## KM
-  observeEvent(input$grupo_cid_2, {
-    opcoes <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE",
-                "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
+  observe({
+    # ATENÇÃO: Adicione "IDADE_ESTRATIFICADA" às opções aqui
+    opcoes_base <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", 
+                     "Idade" = "IDADE_ESTRATIFICADA",
+                     "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
+    
+    req(input$grupo_cid_2)
     
     grupos_especificos <- c("C51-C58 Órgãos genitais femininos",
                             "C60-C63 Órgãos genitais masculinos")
     
-    algum <- any(grupos_especificos %in% input$grupo_cid_2)
+    opcoes_finais <- opcoes_base
     
-    if ((algum & length(input$grupo_cid_2) == 1)) {
-      opcoes <- opcoes[opcoes != "SEXO"]
+    # Se APENAS um grupo de sexo específico for selecionado, remove a opção "Sexo"
+    if (any(grupos_especificos %in% input$grupo_cid_2) && length(input$grupo_cid_2) == 1) {
+      opcoes_finais <- opcoes_base[names(opcoes_base) != "Sexo"]
       
-      selecionado_atual <- input$km_variable
-      if (selecionado_atual == "SEXO") {
-        updateSelectInput(session, "km_variable", selected = "FAIXAETAR")
+      # Se "Sexo" estava selecionado, muda para outra opção para evitar erro
+      if (!is.null(input$km_variable) && input$km_variable == "SEXO") {
+        updatePickerInput(session, "km_variable", selected = "IDADE_ESTRATIFICADA")
       }
     }
     
-    updateSelectInput(session, "km_variable", choices = opcoes)
+    updatePickerInput(session, "km_variable", choices = opcoes_finais)
+    
   })
   
   ## Hazard
   observeEvent(input$grupo_cid_3, {
+    # ================= INÍCIO DA CORREÇÃO =================
     opcoes <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO",
+                "Idade" = "IDADE_ESTRATIFICADA",
                 "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
+    # ================= FIM DA CORREÇÃO =================
     
     grupos_especificos <- c("C51-C58 Órgãos genitais femininos",
                             "C60-C63 Órgãos genitais masculinos")
