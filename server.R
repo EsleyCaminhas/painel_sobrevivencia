@@ -170,6 +170,51 @@ server <- function(input, output, session) {
       hc_plotOptions(series = list(marker = list(radius = 0)))
   })
   
+  # ================= INÍCIO DA MODIFICAÇÃO =================
+  output$logrank_test_output <- renderUI({
+    # Requer que o switch esteja ativado e que haja filtros selecionados
+    req(input$show_logrank, input$grupo_cid_2)
+    
+    dados <- dados_filtrados_km()
+    
+    # O teste só faz sentido para 2 ou mais grupos
+    if (length(unique(dados$Grupo)) < 2) {
+      return(
+        div(class = "alert alert-info",
+            style = "margin-top: 15px;",
+            icon("info-circle"),
+            "O teste de Log-Rank requer duas ou mais curvas para comparação.")
+      )
+    }
+    
+    # Realiza o teste de Log-Rank
+    logrank_test <- survdiff(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
+    
+    # Extrai a estatística e o p-valor
+    chisq_stat <- logrank_test$chisq
+    p_value <- 1 - pchisq(logrank_test$chisq, length(logrank_test$n) - 1)
+    
+    # Formata o p-valor para melhor visualização
+    p_value_formatted <- if (p_value < 0.001) {
+      "< 0.001"
+    } else {
+      format(round(p_value, 3), nsmall = 3)
+    }
+    
+    # Cria o output em HTML
+    tagList(
+      hr(),
+      h4(strong("Resultado do Teste de Log-Rank")),
+      p(class = "justified-text",
+        "O teste de Log-Rank compara as curvas de sobrevivência de dois ou mais grupos.
+         Um p-valor pequeno (geralmente < 0.05) sugere que há uma diferença estatisticamente
+         significativa entre as curvas."),
+      p(HTML(paste0("<b>Estatística Qui-quadrado:</b> ", round(chisq_stat, 3)))),
+      p(HTML(paste0("<b>P-valor:</b> ", p_value_formatted)))
+    )
+  })
+  # ================= FIM DA MODIFICAÇÃO =================
+  
   ##############################################################################
   
   ## Tabela Kaplan-Meier

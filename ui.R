@@ -164,7 +164,7 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "km_variable",
                     label = "Selecione a variável:",
-                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE_ESTRATIFICADA", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
                     selected = "FAIXAETAR"
                   ),
                   
@@ -194,11 +194,25 @@ ui <- dashboardPage(
                     label = "Mostrar o intervalo de confiança?", 
                     value = FALSE,
                     status = "info"
+                  ),
+                  
+                  # ================= INÍCIO DA MODIFICAÇÃO =================
+                  shinyWidgets::materialSwitch(
+                    inputId = "show_logrank",
+                    label = "Mostrar teste de Log-Rank?",
+                    value = FALSE,
+                    status = "info"
                   )
+                  # ================= FIM DA MODIFICAÇÃO =================
                 ),
                 mainPanel(
                   uiOutput("alert_box2"),
                   withSpinner(highchartOutput("km_plot", height = "600px"), type = 6),
+                  
+                  # ================= INÍCIO DA MODIFICAÇÃO =================
+                  withSpinner(uiOutput("logrank_test_output"), type = 6),
+                  # ================= FIM DA MODIFICAÇÃO =================
+                  
                   hr(style = "border: 1px solid #ccc; margin: 20px 0;"),
                   withSpinner(uiOutput("tabelas_por_grupo"), type = 6)
                 )
