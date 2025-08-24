@@ -119,7 +119,9 @@ ui <- dashboardPage(
                     inputId = "grupo_cid_1",
                     label = "Selecione o grupo (topografia):", 
                     choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C50 Mama", "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"),
+                    selected = c("C50 Mama"
+                                 # "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"
+                                 ),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
                   ),
@@ -152,7 +154,9 @@ ui <- dashboardPage(
                     inputId = "grupo_cid_2",
                     label = "Selecione o grupo (topografia):",
                     choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C50 Mama", "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"),
+                    selected = c("C50 Mama"
+                                 # "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos", "C80 Localização primária desconhecida"
+                                 ),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
                   ),
@@ -195,6 +199,7 @@ ui <- dashboardPage(
                 mainPanel(
                   uiOutput("alert_box2"),
                   withSpinner(highchartOutput("km_plot", height = "600px"), type = 6),
+                  hr(style = "border: 1px solid #ccc; margin: 20px 0;"),
                   withSpinner(uiOutput("tabelas_por_grupo"), type = 6)
                 )
               )
@@ -213,7 +218,7 @@ ui <- dashboardPage(
                     inputId = "grupo_cid_3",
                     label = "Selecione o grupo (topografia):",
                     choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C69-C72 Olho, cérebro e outras partes do SNC"),
+                    selected = c("C50 Mama"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
                   ),
@@ -299,11 +304,11 @@ ui <- dashboardPage(
                 ),
                 mainPanel(
                   
-                  uiOutput("alert_box4"),
-                  
                   h3("Resultados do Modelo de Regressão de Cox"),
                   p("A tabela abaixo mostra os resultados do modelo. A coluna 'Hazard Ratio (HR)' indica o efeito de cada variável no risco. 
                     Um HR > 1 sugere um aumento no risco, enquanto um HR < 1 sugere uma diminuição (efeito protetor)."),
+                  
+                  uiOutput("alert_box4"),
                   
                   withSpinner(
                     DTOutput("cox_summary_table"),

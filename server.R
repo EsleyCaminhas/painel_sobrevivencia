@@ -9,7 +9,7 @@ dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   #### aba Análises Gráficas
   
@@ -151,51 +151,90 @@ server <- function(input, output) {
   ## Tabela Kaplan-Meier
   
   output$tabelas_por_grupo <- renderUI({
-    
     req(input$grupo_cid_2)
     
     dados <- dados_filtrados_km() |> arrange(Grupo)
-    
     fit <- survfit(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
-    
     grupos <- unique(dados$Grupo)
     
-    # Cria uma lista de elementos UI para cada grupo
-    tabelas <- map(grupos, ~ {
-      sum_fit <- summary(fit[.x])
+    tagList(
+      shinyWidgets::pickerInput(
+        inputId = "grupos_selecionados",
+        label = "Selecione os grupos para exibir as tabelas:",
+        choices = grupos,
+        selected = grupos[1:min(3, length(grupos))],
+        multiple = TRUE,
+        options = list(`actions-box` = TRUE, `deselect-all-text` = "Nenhuma", `select-all-text` = "Todas")
+      ),
+      withSpinner(uiOutput("tabelas_selecionadas"))
+    )
+  })
+  
+  output$tabelas_selecionadas <- renderUI({
+    req(input$grupos_selecionados)
+    
+    dados <- dados_filtrados_km() |> arrange(Grupo)
+    fit <- survfit(Surv(tempo, DESFECHO) ~ Grupo, data = dados)
+    
+    tabelas <- map(input$grupos_selecionados, ~ {
+      
+      grupo_selecionado <- .x
+      indice_grupo <- which(names(fit$strata) == grupo_selecionado)
+      
+      if (length(indice_grupo) == 0) {
+        indice_grupo <- which(grepl(grupo_selecionado, names(fit$strata)))
+      }
+      
+      req(length(indice_grupo) > 0)
+      
+      inicio <- ifelse(indice_grupo == 1, 1, sum(fit$strata[1:(indice_grupo-1)]) + 1)
+      fim <- sum(fit$strata[1:indice_grupo])
+      
+      dados_grupo <- list(
+        time = fit$time[inicio:fim],
+        surv = fit$surv[inicio:fim],
+        std.err = fit$std.err[inicio:fim],
+        lower = fit$lower[inicio:fim],
+        upper = fit$upper[inicio:fim],
+        n.event = fit$n.event[inicio:fim],
+        n.censor = fit$n.censor[inicio:fim],
+        n.risk = fit$n.risk[inicio:fim]
+      )
       
       tabela <- data.frame(
-        tempo = sum_fit$time,
-        Sobrevivência = sum_fit$surv,
-        Erro_Padrão = sum_fit$std.err,
-        IC_Inferior = sum_fit$lower,
-        IC_Superior = sum_fit$upper,
-        Eventos = sum_fit$n.event,
-        Censuras = sum_fit$n.censor,
-        Em_Risco = sum_fit$n.risk
+        tempo = dados_grupo$time,
+        Sobrevivência = dados_grupo$surv,
+        Erro_Padrão = dados_grupo$std.err,
+        IC_Inferior = dados_grupo$lower,
+        IC_Superior = dados_grupo$upper,
+        Eventos = dados_grupo$n.event,
+        Censuras = dados_grupo$n.censor,
+        Em_Risco = dados_grupo$n.risk
       )
       
       names(tabela)[1] <- janela_tempo()
       
       tagList(
-        h4(paste("Grupo:", .x)),
+        h4(paste("Grupo:", grupo_selecionado)),
         renderDT({
           datatable(
             tabela,
-            options = list(pageLength = 10,
-                           lengthChange = FALSE,
-                           language = list(    
-                             url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
-                           ),
-                           ordering = FALSE,
-                           searching = FALSE,
-                           info = FALSE),
+            options = list(
+              pageLength = 10,
+              lengthChange = FALSE,
+              language = list(    
+                url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
+              ),
+              ordering = FALSE,
+              searching = FALSE,
+              info = FALSE
+            ),
             rownames = FALSE
           ) |>
             formatRound(columns = c('Sobrevivência', 'Erro_Padrão', 'IC_Inferior', 'IC_Superior'), 
                         digits = 4)
-          
-        })
+        }),
+        hr()
       )
     })
     
@@ -445,11 +484,57 @@ server <- function(input, output) {
     }
   })
   
-  ## Geração de PDF de Documentação ----
+  # PDF da documentação 
   observeEvent(input$generate, {
     output$pdfview <- renderUI({
       tags$iframe(style = "height:600px; width:100%", src = "documentacao.pdf")
     })
+  })
+  
+  # Atualizando a seleção para evitar bugs para CID's de sexo exclusivo 
+  
+  ## KM
+  observeEvent(input$grupo_cid_2, {
+    opcoes <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE",
+                "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
+
+    grupos_especificos <- c("C51-C58 Órgãos genitais femininos",
+                            "C60-C63 Órgãos genitais masculinos")
+    
+    algum <- any(grupos_especificos %in% input$grupo_cid_2)
+
+    if ((algum & length(input$grupo_cid_2) == 1)) {
+      opcoes <- opcoes[opcoes != "SEXO"]
+
+      selecionado_atual <- input$km_variable
+      if (selecionado_atual == "SEXO") {
+        updateSelectInput(session, "km_variable", selected = "FAIXAETAR")
+      }
+    }
+
+    updateSelectInput(session, "km_variable", choices = opcoes)
+  })
+  
+  ## Hazard
+  observeEvent(input$grupo_cid_3, {
+    opcoes <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO",
+                "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
+    
+    grupos_especificos <- c("C51-C58 Órgãos genitais femininos",
+                            "C60-C63 Órgãos genitais masculinos")
+    
+    algum <- any(grupos_especificos %in% input$grupo_cid_3)
+    
+    if ((algum & length(input$grupo_cid_3) == 1)) {
+      opcoes <- opcoes[opcoes != "SEXO"]
+      
+      selecionado_atual <- input$hazard_variable
+      if (selecionado_atual == "SEXO") {
+        updateSelectInput(session, "hazard_variable", selected = "FAIXAETAR")
+      }
+    }
+    
+    updateSelectInput(session, "hazard_variable", choices = opcoes)
   })
   
 }
