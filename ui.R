@@ -218,7 +218,7 @@ ui <- dashboardPage(
                     inputId = "grupo_cid_3",
                     label = "Selecione o grupo (topografia):",
                     choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C50 Mama"),
+                    selected = c("C69-C72 Olho, cérebro e outras partes do SNC"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
                   ),
