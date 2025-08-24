@@ -129,8 +129,8 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "variavel_1",
                     label = "Selecione a variável:",
-                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Estádio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO", "Desfecho Tratamento" = "ULTINFO"),
-                    selected = "FAIXAETAR"
+                    choices = c("Faixa etária" = "FAIXAETAR", "Idade (ponto de corte)" = "IDADE_ESTRATIFICADA", "Sexo" = "SEXO", "Estádio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO", "Desfecho Tratamento" = "ULTINFO"),
+                    selected = "IDADE_ESTRATIFICADA"
                   )
                 ),
                 
@@ -164,8 +164,8 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "km_variable",
                     label = "Selecione a variável:",
-                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE_ESTRATIFICADA", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
-                    selected = "FAIXAETAR"
+                    choices = c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade (ponto de corte)" = "IDADE_ESTRATIFICADA", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    selected = "IDADE_ESTRATIFICADA"
                   ),
                   
                   br(),
@@ -232,7 +232,7 @@ ui <- dashboardPage(
                     inputId = "grupo_cid_3",
                     label = "Selecione o grupo (topografia):",
                     choices = c("C50 Mama" = "C50 Mama", "C51-C58 Órgãos genitais femininos" = "C51-C58 Órgãos genitais femininos", "C60-C63 Órgãos genitais masculinos" = "C60-C63 Órgãos genitais masculinos", "C64-C68 Trato urinário" = "C64-C68 Trato urinário", "C69-C72 Olho, cérebro e outras partes do SNC" = "C69-C72 Olho, cérebro e outras partes do SNC", "C73-C75 Tiróide e outras glândulas" = "C73-C75 Tiróide e outras glândulas", "C76 Out. localizações e localizações mal definidas" = "C76 Out. localizações e localizações mal definidas", "C77 Linfonodos" = "C77 Linfonodos", "C80 Localização primária desconhecida" = "C80 Localização primária desconhecida"),
-                    selected = c("C69-C72 Olho, cérebro e outras partes do SNC"),
+                    selected = c("C50 Mama"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE, `selected-text-format` = "count > 8", `count-selected-text` = "C50-C80", `none-selected-text` = "Nenhum item selecionado", `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas")
                   ),
@@ -241,9 +241,9 @@ ui <- dashboardPage(
                     inputId = "hazard_variable",
                     label = "Selecione a variável:",
                     # ================= INÍCIO DA CORREÇÃO =================
-                    choices = c("Sexo" = "SEXO", "Faixa etária" = "FAIXAETAR","Idade" = "IDADE_ESTRATIFICADA", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    choices = c("Sexo" = "SEXO", "Faixa etária" = "FAIXAETAR","Idade (ponto de corte)" = "IDADE_ESTRATIFICADA", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
                     # ================= FIM DA CORREÇÃO =================
-                    selected = "FAIXAETAR"
+                    selected = "IDADE_ESTRATIFICADA"
                   ),
                   
                   br(),
@@ -293,7 +293,7 @@ ui <- dashboardPage(
                   pickerInput(
                     inputId = "cox_variables",
                     label = "Selecione as variáveis (covariáveis):",
-                    choices = c("Faixa etária" = "FAIXAETAR","Idade" = "IDADE_ESTRATIFICADA", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
+                    choices = c("Faixa etária" = "FAIXAETAR","Idade (ponto de corte)" = "IDADE_ESTRATIFICADA", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
                     selected = c("IDADE_ESTRATIFICADA", "SEXO"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE)

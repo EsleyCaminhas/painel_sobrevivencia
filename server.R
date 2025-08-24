@@ -30,16 +30,16 @@ res_cutpoint <- surv_cutpoint(
   data = dados_cancer,
   time = "TEMPO_OBS_DIAG_MESES",
   event = "DESFECHO",
-  variables = "IDADE"
+  variables = "IDADE",
+  minprop = 0.2
 )
 
 # 2. Extrair o valor numérico do ponto de corte.
 ponto_de_corte <- res_cutpoint$cutpoint$cutpoint
 
 # 3. Criar as etiquetas descritivas.
-label_menor <- paste0("Idade < ", ponto_de_corte)
-label_maior <- paste0("Idade >= ", ponto_de_corte)
-
+label_menor <- paste0("Idade menor que ", ponto_de_corte," anos")
+label_maior <- paste0("Idade maior ou igual a ", ponto_de_corte," anos")
 # 4. Adicionar a nova coluna e renomear os níveis do fator.
 dados_cancer <- dados_cancer |>
   mutate(
@@ -89,6 +89,7 @@ server <- function(input, output, session) {
     
     nome_var <- case_when(input$variavel_1 == "SEXO" ~ "Sexo",
                           input$variavel_1 == "FAIXAETAR" ~ "Faixa etária",
+                          input$variavel_1 == "IDADE_ESTRATIFICADA" ~ "Idade (ponto de corte)",
                           input$variavel_1 == "GRUPO_EC" ~ "Estádio clínico",
                           input$variavel_1 == "ULTINFO" ~ "Desfecho Tratamento",
                           input$variavel_1 == "TRATAMENTO" ~ "Tratamento")
@@ -591,7 +592,7 @@ server <- function(input, output, session) {
   observe({
     # ATENÇÃO: Adicione "IDADE_ESTRATIFICADA" às opções aqui
     opcoes_base <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", 
-                     "Idade" = "IDADE_ESTRATIFICADA",
+                     "Idade (ponto de corte)" = "IDADE_ESTRATIFICADA",
                      "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
     
     req(input$grupo_cid_2)
@@ -619,7 +620,7 @@ server <- function(input, output, session) {
   observeEvent(input$grupo_cid_3, {
     # ================= INÍCIO DA CORREÇÃO =================
     opcoes <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO",
-                "Idade" = "IDADE_ESTRATIFICADA",
+                "Idade (ponto de corte)" = "IDADE_ESTRATIFICADA",
                 "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
     # ================= FIM DA CORREÇÃO =================
     
