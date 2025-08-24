@@ -314,7 +314,7 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "len_tempo3",
                     label = "Selecione a unidade de tempo:",
-                    choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
+                    choices = c("Dias" = "DIAS","Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI"),
                     selected = "DIAS"
                   )
                 ),
