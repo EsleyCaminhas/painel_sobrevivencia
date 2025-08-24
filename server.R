@@ -16,49 +16,66 @@ library(shinycssloaders)
 
 # Dica: É uma boa prática usar caminhos relativos para que o projeto funcione em qualquer computador.
 # O caminho original "data/dados_cancer_filtrado.fst" é mais portável.
-dados_cancer <- read_fst("data/dados_cancer_filtrado.fst",
-                         as.data.table = TRUE) |>
+dados_cancer_base <- read_fst("data/dados_cancer_filtrado.fst",
+                              as.data.table = TRUE) |>
   filter(TEMPO_OBS_DIAG_MESES > 0)
-
-
-# ==============================================================================
-# ==== INÍCIO DA MODIFICAÇÃO: ESTRATIFICAR E SALVAR A IDADE AQUI ====
-# ==============================================================================
-
-# 1. Encontrar o ponto de corte ótimo para a idade usando a base de dados COMPLETA.
-res_cutpoint <- surv_cutpoint(
-  data = dados_cancer,
-  time = "TEMPO_OBS_DIAG_MESES",
-  event = "DESFECHO",
-  variables = "IDADE",
-  minprop = 0.2
-)
-
-# 2. Extrair o valor numérico do ponto de corte.
-ponto_de_corte <- res_cutpoint$cutpoint$cutpoint
-
-# 3. Criar as etiquetas descritivas.
-label_menor <- paste0("Idade menor que ", ponto_de_corte," anos")
-label_maior <- paste0("Idade maior ou igual a ", ponto_de_corte," anos")
-# 4. Adicionar a nova coluna e renomear os níveis do fator.
-dados_cancer <- dados_cancer |>
-  mutate(
-    # Cria a coluna com os níveis "low" e "high"
-    IDADE_ESTRATIFICADA = surv_categorize(res_cutpoint)$IDADE,
-    # Imediatamente renomeia os níveis para as etiquetas descritivas
-    IDADE_ESTRATIFICADA = recode_factor(IDADE_ESTRATIFICADA,
-                                        "low" = label_menor,
-                                        "high" = label_maior)
-  )
-# ==============================================================================
-# ==== FIM DA MODIFICAÇÃO ====
-# ==============================================================================
 
 
 ## Aqui fica a parte onde trabalhamos com os dados e criamos os outputs
 ## que serão utilizados na ui
 
 server <- function(input, output, session) {
+  
+  # ==============================================================================
+  # ==== INÍCIO DA MODIFICAÇÃO: LÓGICA DE CUTPOINT MOVIDA PARA DENTRO DO SERVER ====
+  # ==============================================================================
+  
+  # 1. Criar uma expressão reativa que depende das seleções de tempo do usuário.
+  # Usaremos os inputs da aba Kaplan-Meier (input$Tempo_int e input$len_tempo) para controlar o cálculo.
+  dados_cancer_reativo <- reactive({
+    
+    # Garante que os inputs de tempo existem antes de prosseguir
+    req(input$Tempo_int, input$len_tempo)
+    
+    # Cria o nome da coluna de tempo dinamicamente com base na seleção do usuário
+    tempo_selecionado <- paste0("TEMPO_OBS_", input$Tempo_int, "_", input$len_tempo)
+    
+    # Filtra o data.frame para garantir que o tempo seja maior que zero na escala selecionada
+    dados_filtrados_tempo <- dados_cancer_base |>
+      filter(.data[[tempo_selecionado]] > 0)
+    
+    # 2. Encontrar o ponto de corte ótimo para a idade usando o tempo dinâmico.
+    res_cutpoint <- surv_cutpoint(
+      data = dados_filtrados_tempo,
+      time = tempo_selecionado, # Usa a coluna de tempo dinâmica
+      event = "DESFECHO",
+      variables = "IDADE",
+      minprop = 0.2
+    )
+    
+    # 3. Extrair o valor numérico do ponto de corte.
+    ponto_de_corte <- res_cutpoint$cutpoint$cutpoint
+    
+    # 4. Criar as etiquetas descritivas.
+    label_menor <- paste0("Idade menor que ", ponto_de_corte," anos")
+    label_maior <- paste0("Idade maior ou igual a ", ponto_de_corte," anos")
+    
+    # 5. Adicionar a nova coluna e renomear os níveis do fator ao data.frame filtrado.
+    dados_com_idade_estratificada <- dados_filtrados_tempo |>
+      mutate(
+        IDADE_ESTRATIFICADA = surv_categorize(res_cutpoint)$IDADE,
+        IDADE_ESTRATIFICADA = recode_factor(IDADE_ESTRATIFICADA,
+                                            "low" = label_menor,
+                                            "high" = label_maior)
+      )
+    
+    # Retorna o dataframe final e reativo
+    return(dados_com_idade_estratificada)
+  })
+  # ==============================================================================
+  # ==== FIM DA MODIFICAÇÃO ====
+  # ==============================================================================
+  
   
   #### aba Análises Gráficas
   
@@ -67,7 +84,8 @@ server <- function(input, output, session) {
   ## Histograma
   
   dados_filtrados <- reactive({
-    dados_cancer |>
+    # ALTERADO: Usa dados_cancer_reativo() em vez de dados_cancer
+    dados_cancer_reativo() |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_1)
   })
   
@@ -94,14 +112,14 @@ server <- function(input, output, session) {
                           input$variavel_1 == "ULTINFO" ~ "Desfecho Tratamento",
                           input$variavel_1 == "TRATAMENTO" ~ "Tratamento")
     
-    hchart(contagem, "column", 
+    hchart(contagem, "column",
            hcaes(x = !!sym(input$variavel_1), y = n),
            name = "Número de observações",
            color = "#4682B4") |>
       hc_title(text = paste("Frequência observada para a variável ", nome_var)) |>
       hc_xAxis(title = list(text = nome_var)) |>
       hc_yAxis(max = max(20000, max(contagem$n, na.rm = TRUE)),
-               title = list(text = "Número de observações")) 
+               title = list(text = "Número de observações"))
   })
   
   #### aba Curvas de Kaplan-Meier
@@ -120,12 +138,8 @@ server <- function(input, output, session) {
   ## Gráfico Kaplan-Meier
   
   dados_filtrados_km <- reactive({
-    
-    # O CÓDIGO AQUI FOI SIMPLIFICADO.
-    # A coluna `IDADE_ESTRATIFICADA` já existe e pode ser selecionada diretamente pelo usuário.
-    # O bloco "if" para calcular o cutpoint foi removido.
-    
-    dados <- dados_cancer |>
+    # ALTERADO: Usa dados_cancer_reativo() em vez de dados_cancer
+    dados <- dados_cancer_reativo() |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_2) |>
       select(tempo = paste0("TEMPO_OBS_",input$Tempo_int,"_",input$len_tempo),
              Grupo = input$km_variable,
@@ -160,20 +174,20 @@ server <- function(input, output, session) {
                labels = list(formatter = JS("function() { return Highcharts.numberFormat(this.value, 3); }"))) |>
       hc_tooltip(
         formatter = JS(paste0("function() {
-          
+
           if (typeof this.point.low !== 'undefined' && typeof this.point.high !== 'undefined') {
 
             return '<b> Intervalo </b><br/>' +
                    '", janela_tempo(), ": <b>' + this.x + '</b><br/>' +
-                   'IC%: <b>' + Highcharts.numberFormat(this.point.low, 3) + 
+                   'IC%: <b>' + Highcharts.numberFormat(this.point.low, 3) +
                    ' - ' + Highcharts.numberFormat(this.point.high, 3) + '</b>';
-          
+
           } else {
-          
+
             return '<b>' + this.series.name + '</b><br/>' +
                    '", janela_tempo(), ": <b>' + this.x + '</b><br/>' +
                    'Sobrevivência: <b>' + Highcharts.numberFormat(this.y, 3) + '</b>';
-          
+
           }
         }")),
         shared = FALSE,
@@ -304,7 +318,7 @@ server <- function(input, output, session) {
             options = list(
               pageLength = 10,
               lengthChange = FALSE,
-              language = list(   
+              language = list(
                 url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
               ),
               ordering = FALSE,
@@ -313,7 +327,7 @@ server <- function(input, output, session) {
             ),
             rownames = FALSE
           ) |>
-            formatRound(columns = c('Sobrevivência', 'Erro_Padrão', 'IC_Inferior', 'IC_Superior'), 
+            formatRound(columns = c('Sobrevivência', 'Erro_Padrão', 'IC_Inferior', 'IC_Superior'),
                         digits = 4)
         }),
         hr()
@@ -344,7 +358,8 @@ server <- function(input, output, session) {
   ## Gráfico função de risco
   
   dados_filtrados_hazard <- reactive({
-    dados_cancer |>
+    # ALTERADO: Usa dados_cancer_reativo() em vez de dados_cancer
+    dados_cancer_reativo() |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_3) |>
       select(tempo = paste0("TEMPO_OBS_",input$Tempo_int2,"_",input$len_tempo2),
              Grupo = input$hazard_variable,
@@ -404,7 +419,7 @@ server <- function(input, output, session) {
       df_plot,
       type = "line",
       hcaes(x = tempo, y = risco, group = categoria),
-      marker = list(enabled = FALSE) 
+      marker = list(enabled = FALSE)
     ) |>
       hc_title(text = "Função de Risco") |>
       hc_xAxis(title = list(text = paste0(janela_tempo2()))) |>
@@ -435,15 +450,16 @@ server <- function(input, output, session) {
   dados_filtrados_cox <- reactive({
     req(input$grupo_cid_4, input$cox_variables)
     
-    dados_cancer |>
+    # ALTERADO: Usa dados_cancer_reativo() em vez de dados_cancer
+    dados_cancer_reativo() |>
       filter(TOPOGRUP_GRUPO %in% input$grupo_cid_4) |>
       select(
         tempo = paste0("TEMPO_OBS_", input$Tempo_int3, "_", input$len_tempo3),
         DESFECHO,
         all_of(input$cox_variables)
       ) |>
-      mutate(tempo = as.numeric(tempo)) |> 
-      na.omit() 
+      mutate(tempo = as.numeric(tempo)) |>
+      na.omit()
   })
   
   # Reactive para ajustar o modelo de Cox (para ser reutilizado)
@@ -453,7 +469,7 @@ server <- function(input, output, session) {
     dados <- dados_filtrados_cox()
     
     validate(
-      need(nrow(dados) > 0, "") 
+      need(nrow(dados) > 0, "")
     )
     
     formula_str <- paste("Surv(tempo, DESFECHO) ~", paste(input$cox_variables, collapse = " + "))
@@ -472,7 +488,7 @@ server <- function(input, output, session) {
     
     cox_model <- cox_model_fit()
     
-    summary_df <- broom::tidy(cox_model, exponentiate = TRUE, conf.int = TRUE) |> 
+    summary_df <- broom::tidy(cox_model, exponentiate = TRUE, conf.int = TRUE) |>
       select(
         Variável = term,
         `Hazard Ratio (HR)` = estimate,
@@ -486,8 +502,8 @@ server <- function(input, output, session) {
       options = list(pageLength = 10, lengthChange = FALSE, searching = FALSE, info = FALSE,
                      language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json')),
       rownames = FALSE
-    ) |> 
-      formatRound(columns = c('Hazard Ratio (HR)', 'IC Inferior', 'IC Superior'), digits = 3) |> 
+    ) |>
+      formatRound(columns = c('Hazard Ratio (HR)', 'IC Inferior', 'IC Superior'), digits = 3) |>
       formatRound(columns = c('Valor-p'), digits = 2)
     
   })
@@ -513,8 +529,8 @@ server <- function(input, output, session) {
     
     tagList(
       h3("Teste de Pressupostos (Resíduos de Schoenfeld)"),
-      p("Este teste verifica a premissa de riscos proporcionais do modelo de Cox. 
-        Se a linha suavizada no gráfico for aproximadamente horizontal e o p-valor for maior que 0.05, 
+      p("Este teste verifica a premissa de riscos proporcionais do modelo de Cox.
+        Se a linha suavizada no gráfico for aproximadamente horizontal e o p-valor for maior que 0.05,
         a premissa é considerada atendida para aquela variável."),
       
       pickerInput(
@@ -568,30 +584,30 @@ server <- function(input, output, session) {
         output[[paste0("schoenfeld_plot_", plot_id)]] <- renderPlot({
           plot_list <- ggcoxzph(schoenfeld_test, var = my_term, point.alpha = 0.5)
           
-          plot_list[[1]] + 
+          plot_list[[1]] +
             labs(
               title = paste("Resíduos de Schoenfeld para:", my_term),
               subtitle = paste("Teste de Proporcionalidade, p-valor:", round(schoenfeld_test$table[my_term, "p"], 4))
-            ) + 
+            ) +
             theme_bw()
         })
       })
     }
   })
   
-  # PDF da documentação 
+  # PDF da documentação
   observeEvent(input$generate, {
     output$pdfview <- renderUI({
       tags$iframe(style = "height:600px; width:100%", src = "documentacao.pdf")
     })
   })
   
-  # Atualizando a seleção para evitar bugs para CID's de sexo exclusivo 
+  # Atualizando a seleção para evitar bugs para CID's de sexo exclusivo
   
   ## KM
   observe({
     # ATENÇÃO: Adicione "IDADE_ESTRATIFICADA" às opções aqui
-    opcoes_base <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", 
+    opcoes_base <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO",
                      "Idade (ponto de corte)" = "IDADE_ESTRATIFICADA",
                      "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
     
