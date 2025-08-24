@@ -183,8 +183,8 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "len_tempo",
                     label = "Selecione a unidade de tempo:",
-                    choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
-                    selected = "TRI"
+                    choices = c("Dias" = "DIAS","Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI"),
+                    selected = "DIAS"
                   ),
                   
                   hr(),
@@ -261,8 +261,8 @@ ui <- dashboardPage(
                   selectInput(
                     inputId = "len_tempo2",
                     label = "Selecione a unidade de tempo:",
-                    choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
-                    selected = "TRI"
+                    choices = c("Dias" = "DIAS","Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI"),
+                    selected = "DIAS"
                   )
                 ),
                 mainPanel(
@@ -294,7 +294,7 @@ ui <- dashboardPage(
                     inputId = "cox_variables",
                     label = "Selecione as variáveis (covariáveis):",
                     choices = c("Faixa etária" = "FAIXAETAR","Idade" = "IDADE_ESTRATIFICADA", "Sexo" = "SEXO", "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO"),
-                    selected = c("FAIXAETAR", "SEXO"),
+                    selected = c("IDADE_ESTRATIFICADA", "SEXO"),
                     multiple = TRUE,
                     options = list(`actions-box` = TRUE)
                   ),
@@ -315,7 +315,7 @@ ui <- dashboardPage(
                     inputId = "len_tempo3",
                     label = "Selecione a unidade de tempo:",
                     choices = c("Meses (30 dias)" = "MESES", "Trimestres (90 dias)" = "TRI", "Anos (365 dias)" = "ANO"),
-                    selected = "TRI"
+                    selected = "DIAS"
                   )
                 ),
                 mainPanel(

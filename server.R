@@ -98,6 +98,7 @@ server <- function(input, output, session) {
   
   janela_tempo <- reactive({
     case_when(
+      input$len_tempo == "DIAS" ~ "Tempo (dias)",
       input$len_tempo == "MESES" ~ "Tempo (meses)",
       input$len_tempo == "TRI" ~ "Tempo (trimestres)",
       input$len_tempo == "ANO" ~ "Tempo (anos)"
