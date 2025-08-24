@@ -410,6 +410,21 @@ server <- function(input, output, session) {
     
   })
   
+  # INÍCIO DO CÓDIGO ADICIONADO
+  # Forest Plot do Modelo de Cox
+  output$cox_forest_plot <- renderPlot({
+    
+    validate(
+      need(nrow(dados_filtrados_cox()) > 0, "Não há dados suficientes para gerar o forest plot.")
+    )
+    
+    ggforest(
+      model = cox_model_fit(),
+      data = dados_filtrados_cox()
+    )
+  })
+  # FIM DO CÓDIGO ADICIONADO
+  
   # Lógica para os resíduos de Schoenfeld
   
   # 1. Gera o seletor de variáveis dinamicamente
@@ -497,21 +512,21 @@ server <- function(input, output, session) {
   observeEvent(input$grupo_cid_2, {
     opcoes <- c("Faixa etária" = "FAIXAETAR", "Sexo" = "SEXO", "Idade" = "IDADE",
                 "Estágio clínico" = "GRUPO_EC", "Tratamento" = "TRATAMENTO")
-
+    
     grupos_especificos <- c("C51-C58 Órgãos genitais femininos",
                             "C60-C63 Órgãos genitais masculinos")
     
     algum <- any(grupos_especificos %in% input$grupo_cid_2)
-
+    
     if ((algum & length(input$grupo_cid_2) == 1)) {
       opcoes <- opcoes[opcoes != "SEXO"]
-
+      
       selecionado_atual <- input$km_variable
       if (selecionado_atual == "SEXO") {
         updateSelectInput(session, "km_variable", selected = "FAIXAETAR")
       }
     }
-
+    
     updateSelectInput(session, "km_variable", choices = opcoes)
   })
   
