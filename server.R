@@ -27,26 +27,36 @@ dados_cancer_base <- read_fst("data/dados_cancer_filtrado.fst",
 server <- function(input, output, session) {
   
   # ==============================================================================
-  # ==== INÍCIO DA MODIFICAÇÃO: LÓGICA DE CUTPOINT MOVIDA PARA DENTRO DO SERVER ====
+  # ==== INÍCIO DA MODIFICAÇÃO: LÓGICA DE CUTPOINT REATIVA AO CID ====
   # ==============================================================================
   
-  # 1. Criar uma expressão reativa que depende das seleções de tempo do usuário.
-  # Usaremos os inputs da aba Kaplan-Meier (input$Tempo_int e input$len_tempo) para controlar o cálculo.
+  # 1. Criar uma expressão reativa que depende das seleções de tempo E de CID do usuário.
+  # Usaremos os inputs da aba Kaplan-Meier (input$Tempo_int, input$len_tempo e input$grupo_cid_2)
+  # para controlar o cálculo.
   dados_cancer_reativo <- reactive({
     
-    # Garante que os inputs de tempo existem antes de prosseguir
-    req(input$Tempo_int, input$len_tempo)
+    # Garante que os inputs de tempo e de CID existem antes de prosseguir
+    req(input$Tempo_int, input$len_tempo, input$grupo_cid_2)
     
     # Cria o nome da coluna de tempo dinamicamente com base na seleção do usuário
     tempo_selecionado <- paste0("TEMPO_OBS_", input$Tempo_int, "_", input$len_tempo)
     
-    # Filtra o data.frame para garantir que o tempo seja maior que zero na escala selecionada
-    dados_filtrados_tempo <- dados_cancer_base |>
-      filter(.data[[tempo_selecionado]] > 0)
+    # Filtra os dados que serão usados para encontrar o ponto de corte ideal.
+    # Esta filtragem usa o CID selecionado na aba Kaplan-Meier.
+    dados_para_cutpoint <- dados_cancer_base |>
+      filter(
+        TOPOGRUP_GRUPO %in% input$grupo_cid_2,
+        .data[[tempo_selecionado]] > 0
+      )
     
-    # 2. Encontrar o ponto de corte ótimo para a idade usando o tempo dinâmico.
+    # Valida se há dados suficientes para o cálculo
+    validate(
+      need(nrow(dados_para_cutpoint) > 1, "Não há dados suficientes para calcular o ponto de corte com os CIDs e a escala de tempo selecionados.")
+    )
+    
+    # 2. Encontrar o ponto de corte ótimo para a idade usando os dados filtrados.
     res_cutpoint <- surv_cutpoint(
-      data = dados_filtrados_tempo,
+      data = dados_para_cutpoint,
       time = tempo_selecionado, # Usa a coluna de tempo dinâmica
       event = "DESFECHO",
       variables = "IDADE",
@@ -57,17 +67,20 @@ server <- function(input, output, session) {
     ponto_de_corte <- res_cutpoint$cutpoint$cutpoint
     
     # 4. Criar as etiquetas descritivas.
-    label_menor <- paste0("Idade menor que ", ponto_de_corte," anos")
-    label_maior <- paste0("Idade maior ou igual a ", ponto_de_corte," anos")
+    label_menor <- paste0("Idade menor que ", round(ponto_de_corte, 0)," anos")
+    label_maior <- paste0("Idade maior ou igual a ", round(ponto_de_corte, 0)," anos")
     
-    # 5. Adicionar a nova coluna e renomear os níveis do fator ao data.frame filtrado.
-    dados_com_idade_estratificada <- dados_filtrados_tempo |>
+    # 5. Adicionar a nova coluna 'IDADE_ESTRATIFICADA' à base de dados COMPLETA,
+    #    e então filtrar pelo tempo > 0. A estratificação é aplicada a todos os dados,
+    #    permitindo que outras abas usem esta variável com seus próprios filtros de CID.
+    dados_com_idade_estratificada <- dados_cancer_base |>
       mutate(
-        IDADE_ESTRATIFICADA = surv_categorize(res_cutpoint)$IDADE,
-        IDADE_ESTRATIFICADA = recode_factor(IDADE_ESTRATIFICADA,
-                                            "low" = label_menor,
-                                            "high" = label_maior)
-      )
+        IDADE_ESTRATIFICADA = factor(
+          ifelse(IDADE < ponto_de_corte, label_menor, label_maior),
+          levels = c(label_menor, label_maior)
+        )
+      ) |>
+      filter(.data[[tempo_selecionado]] > 0)
     
     # Retorna o dataframe final e reativo
     return(dados_com_idade_estratificada)
