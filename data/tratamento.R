@@ -8,7 +8,7 @@ library(fst)
 
 ## Aqui vamos filtrar as CID's que iremos utilizar
 
-dados_cancer <- read.fst("C:/GitHub/painel_sobrevivencia/data/dados_cancer_filtrado.fst") # disponivel no classroom
+dados_cancer <- read.dbf("data/pacigeral.dbf") # disponivel no classroom
 
 # Neoplasias Urogenitais, Urinárias, Olho e Sistema Nervoso Central, 
 # Endócrinas e Secundárias/Mal Definidas 
