@@ -5,7 +5,7 @@ account: esleycaminhasferreira
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 15034185
-bundleId: 10814014
+bundleId: 10814047
 url: https://esleycaminhasferreira.shinyapps.io/painel_sobrevivencia/
 version: 1
 asMultiple: FALSE
